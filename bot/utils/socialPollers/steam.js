@@ -60,8 +60,6 @@ async function checkSteamFreeGames() {
     });
   }
 
-  console.log(`[SOCIAL][DEBUG] Steam - ${rows.length} bloc(s) trouvé(s) dans le HTML, ${freeGames.length} jeu(x) extrait(s) avec succès`);
-
   return { freeGames };
 }
 

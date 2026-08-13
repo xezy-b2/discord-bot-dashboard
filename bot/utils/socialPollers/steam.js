@@ -28,6 +28,13 @@ async function checkSteamFreeGames() {
     timeout: 10000
   });
 
+  // --- DIAGNOSTIC TEMPORAIRE : a retirer une fois le scraping confirme fonctionnel ---
+  console.log('[SOCIAL][DEBUG] Steam - cles de la reponse :', Object.keys(data || {}));
+  console.log('[SOCIAL][DEBUG] Steam - total_count :', data?.total_count);
+  console.log('[SOCIAL][DEBUG] Steam - results_html length :', data?.results_html?.length || 0);
+  console.log('[SOCIAL][DEBUG] Steam - extrait results_html :', (data?.results_html || '').slice(0, 500));
+  // --- FIN DIAGNOSTIC ---
+
   const html = data?.results_html || '';
 
   // Chaque resultat est un bloc <a data-ds-appid="..." ...>...<span class="title">Nom</span>...<img src="...">...

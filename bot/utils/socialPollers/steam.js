@@ -74,22 +74,29 @@ async function fetchSteamDescription(appId) {
   try {
     const { data } = await axios.get('https://store.steampowered.com/api/appdetails', {
       params: { appids: appId, l: 'french', cc: 'fr' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       timeout: 8000
     });
 
     const entry = data?.[appId];
-    if (!entry?.success) return '';
+    if (!entry?.success) {
+      console.warn(`[SOCIAL] Steam - appdetails a répondu success:false pour l'appId ${appId}`);
+      return '';
+    }
 
     const raw = entry.data?.short_description || '';
-    // Nettoyage defensif : retire d'eventuelles balises HTML residuelles et les entites courantes
-    return raw
+    const cleaned = raw
       .replace(/<[^>]+>/g, '')
       .replace(/&amp;/g, '&')
       .replace(/&#39;/g, "'")
       .replace(/&quot;/g, '"')
       .trim();
+
+    console.log(`[SOCIAL] Steam - description récupérée pour l'appId ${appId} (${cleaned.length} caractères)`);
+    return cleaned;
   } catch (err) {
-    return ''; // pas bloquant : l'embed s'affiche simplement sans description
+    console.error(`[SOCIAL] Erreur récupération description Steam (appId ${appId}) :`, err.message);
+    return '';
   }
 }
 

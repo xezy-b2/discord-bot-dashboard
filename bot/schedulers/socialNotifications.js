@@ -22,7 +22,9 @@ async function notify(client, account, embed) {
   embed.setTimestamp();
 
   const content = account.message ? account.message : undefined;
-  channel.send({ content, embeds: [embed] }).catch(() => {});
+  channel.send({ content, embeds: [embed] }).catch(err => {
+    console.error(`[SOCIAL] Échec d'envoi dans le salon ${account.channelId} :`, err.message);
+  });
 }
 
 /**
@@ -127,6 +129,7 @@ async function processEpicGames(client, account) {
   const newGames = result.freeGames.filter(g => !previousTitles.includes(g.title));
 
   if (!isFirstCheck && newGames.length > 0) {
+    console.log(`[SOCIAL] ${newGames.length} nouveau(x) jeu(x) gratuit(s) détecté(s) sur Epic Games :`, newGames.map(g => g.title).join(', '));
     for (const game of newGames) {
       const embed = formatFreeGameEmbed(game, {
         platformLabel: "l'Epic Games Store",

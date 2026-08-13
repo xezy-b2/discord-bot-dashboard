@@ -7,6 +7,7 @@ const SocialAccountSchema = new Schema({
   displayName: { type: String, default: '' }, // nom affiche dans les notifications
   channelId: { type: String, required: true }, // salon Discord ou poster la notif
   message: { type: String, default: '' }, // template custom, sinon message par defaut selon la plateforme
+  embedColor: { type: String, default: '' }, // couleur hex custom (ex: #ff0000), vide = couleur par defaut de la plateforme
   enabled: { type: Boolean, default: true },
   lastState: { type: Schema.Types.Mixed, default: null }, // dernier etat connu (video id, live/offline, etc.)
   lastCheckedAt: { type: Date, default: null }

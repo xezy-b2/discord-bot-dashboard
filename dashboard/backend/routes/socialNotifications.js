@@ -9,7 +9,7 @@ router.get('/:guildId', requireAuth, requireGuildAccess, async (req, res) => {
 });
 
 router.post('/:guildId', requireAuth, requireGuildAccess, async (req, res) => {
-  const { platform, identifier, displayName, channelId, message } = req.body;
+  const { platform, identifier, displayName, channelId, message, embedColor } = req.body;
   if (!platform || !channelId) {
     return res.status(400).json({ error: 'platform et channelId requis' });
   }
@@ -27,6 +27,7 @@ router.post('/:guildId', requireAuth, requireGuildAccess, async (req, res) => {
     displayName: isGlobalPlatform ? '' : (displayName || identifier),
     channelId,
     message: message || '',
+    embedColor: embedColor || '',
     lastState: null // premiere verification = pas de notif immediate, juste l'etat initial
   });
 
@@ -34,12 +35,13 @@ router.post('/:guildId', requireAuth, requireGuildAccess, async (req, res) => {
 });
 
 router.patch('/:guildId/:id', requireAuth, requireGuildAccess, async (req, res) => {
-  const { enabled, channelId, message, displayName } = req.body;
+  const { enabled, channelId, message, displayName, embedColor } = req.body;
   const update = {};
   if (enabled !== undefined) update.enabled = enabled;
   if (channelId !== undefined) update.channelId = channelId;
   if (message !== undefined) update.message = message;
   if (displayName !== undefined) update.displayName = displayName;
+  if (embedColor !== undefined) update.embedColor = embedColor;
 
   const doc = await SocialAccount.findOneAndUpdate(
     { _id: req.params.id, guildId: req.params.guildId },

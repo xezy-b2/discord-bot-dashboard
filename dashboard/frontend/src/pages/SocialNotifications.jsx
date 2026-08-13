@@ -5,11 +5,11 @@ import { useGuildMeta } from '../hooks/useGuildMeta';
 import Toggle from '../components/Toggle';
 
 const PLATFORMS = [
-  { value: 'twitch', label: '🟣 Twitch', placeholder: 'pseudo_twitch', help: 'Le pseudo exact de la chaîne (visible dans l\'URL twitch.tv/pseudo). Nécessite TWITCH_CLIENT_ID/SECRET dans le .env du bot.' },
-  { value: 'youtube', label: '🔴 YouTube', placeholder: 'UCxxxxxxxxxxxxxxxxxxxxxx', help: 'L\'ID de chaîne YouTube (pas le nom) — visible dans Paramètres avancés de la chaîne. Nécessite YOUTUBE_API_KEY.' },
-  { value: 'tiktok', label: '⚫ TikTok', placeholder: 'pseudo_tiktok', help: 'Fonctionnement best-effort (pas d\'API officielle) : TikTok peut casser cette fonctionnalité sans préavis.' },
-  { value: 'epicgames', label: '⬛ Epic Games (jeux gratuits)', placeholder: 'global', help: 'Alerte quand de nouveaux jeux gratuits apparaissent sur l\'Epic Games Store. Mets n\'importe quel identifiant, ex: "global".' },
-  { value: 'steam', label: '🔵 Steam (jeux gratuits)', placeholder: 'global', help: 'Alerte quand un jeu passe à -100% (gratuit temporairement) sur le Steam Store. Mets n\'importe quel identifiant, ex: "global".' }
+  { value: 'twitch', label: '🟣 Twitch', placeholder: 'pseudo_twitch', help: 'Le pseudo exact de la chaîne (visible dans l\'URL twitch.tv/pseudo). Nécessite TWITCH_CLIENT_ID/SECRET dans le .env du bot.', defaultColor: '#9146FF' },
+  { value: 'youtube', label: '🔴 YouTube', placeholder: 'UCxxxxxxxxxxxxxxxxxxxxxx', help: 'L\'ID de chaîne YouTube (pas le nom) — visible dans Paramètres avancés de la chaîne. Nécessite YOUTUBE_API_KEY.', defaultColor: '#FF0000' },
+  { value: 'tiktok', label: '⚫ TikTok', placeholder: 'pseudo_tiktok', help: 'Fonctionnement best-effort (pas d\'API officielle) : TikTok peut casser cette fonctionnalité sans préavis.', defaultColor: '#000000' },
+  { value: 'epicgames', label: '⬛ Epic Games (jeux gratuits)', placeholder: 'global', help: 'Alerte quand de nouveaux jeux gratuits apparaissent sur l\'Epic Games Store. Mets n\'importe quel identifiant, ex: "global".', defaultColor: '#313131' },
+  { value: 'steam', label: '🔵 Steam (jeux gratuits)', placeholder: 'global', help: 'Alerte quand un jeu passe à -100% (gratuit temporairement) sur le Steam Store. Mets n\'importe quel identifiant, ex: "global".', defaultColor: '#1b2838' }
 ];
 
 export default function SocialNotifications() {
@@ -17,12 +17,17 @@ export default function SocialNotifications() {
   const { channels } = useGuildMeta(guildId);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ platform: 'twitch', identifier: '', displayName: '', channelId: '', message: '' });
+  const [form, setForm] = useState({ platform: 'twitch', identifier: '', displayName: '', channelId: '', message: '', embedColor: '#9146FF' });
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
 
   const currentPlatform = PLATFORMS.find(p => p.value === form.platform);
   const isGlobalPlatform = form.platform === 'epicgames' || form.platform === 'steam';
+
+  const selectPlatform = (value) => {
+    const platform = PLATFORMS.find(p => p.value === value);
+    setForm({ ...form, platform: value, embedColor: platform.defaultColor });
+  };
 
   const load = () => {
     setLoading(true);
@@ -37,7 +42,7 @@ export default function SocialNotifications() {
     setError('');
     try {
       await api.post(`/social-notifications/${guildId}`, form);
-      setForm({ platform: form.platform, identifier: '', displayName: '', channelId: '', message: '' });
+      setForm({ platform: form.platform, identifier: '', displayName: '', channelId: '', message: '', embedColor: currentPlatform.defaultColor });
       load();
     } catch (err) {
       setError(err.response?.data?.error || 'Erreur lors de l\'ajout');
@@ -49,6 +54,11 @@ export default function SocialNotifications() {
   const toggle = async (id, enabled) => {
     await api.patch(`/social-notifications/${guildId}/${id}`, { enabled });
     load();
+  };
+
+  const updateColor = async (id, embedColor) => {
+    setAccounts(accounts.map(a => a._id === id ? { ...a, embedColor } : a));
+    await api.patch(`/social-notifications/${guildId}/${id}`, { embedColor });
   };
 
   const remove = async (id) => {
@@ -74,7 +84,7 @@ export default function SocialNotifications() {
             {PLATFORMS.map(p => (
               <button
                 key={p.value}
-                onClick={() => setForm({ ...form, platform: p.value })}
+                onClick={() => selectPlatform(p.value)}
                 className={`px-3 py-2 rounded-xl text-sm font-medium border transition ${form.platform === p.value ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
               >
                 {p.label}
@@ -111,6 +121,14 @@ export default function SocialNotifications() {
           <input className="input-field" placeholder="@everyone" value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} />
         </div>
 
+        <div>
+          <label className="label">Couleur de l'embed</label>
+          <div className="flex items-center gap-2 bg-base-850 border border-white/10 rounded-xl px-2 py-1.5 w-fit">
+            <input type="color" value={form.embedColor} onChange={e => setForm({ ...form, embedColor: e.target.value })} className="w-7 h-7 rounded cursor-pointer bg-transparent" />
+            <span className="text-xs text-white/50 font-mono">{form.embedColor}</span>
+          </div>
+        </div>
+
         <button onClick={create} disabled={creating} className="btn-primary text-sm">{creating ? 'Ajout...' : 'Ajouter'}</button>
       </div>
 
@@ -127,6 +145,13 @@ export default function SocialNotifications() {
               <p className="text-xs text-white/40">#{channels.find(c => c.id === a.channelId)?.name || '?'}</p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
+              <input
+                type="color"
+                value={a.embedColor || '#5865F2'}
+                onChange={e => updateColor(a._id, e.target.value)}
+                title="Couleur de l'embed"
+                className="w-7 h-7 rounded cursor-pointer bg-transparent border border-white/10"
+              />
               <Toggle checked={a.enabled} onChange={v => toggle(a._id, v)} />
               <button onClick={() => remove(a._id)} className="text-xs text-red-400 hover:text-red-300">Supprimer</button>
             </div>

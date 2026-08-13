@@ -16,6 +16,11 @@ async function notify(client, account, embed) {
   const channel = await client.channels.fetch(account.channelId).catch(() => null);
   if (!channel) return;
 
+  // Couleur custom definie sur le dashboard : remplace la couleur par defaut de la plateforme
+  if (account.embedColor) {
+    embed.setColor(account.embedColor);
+  }
+
   if (channel.guild) {
     embed.setFooter({ text: channel.guild.name, iconURL: channel.guild.iconURL() || undefined });
   }

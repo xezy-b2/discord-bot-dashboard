@@ -4,8 +4,7 @@ const axios = require('axios');
  * Utilise le moteur de recherche public du store Steam (la meme requete que la barre de
  * recherche du site, filtree sur "gratuit" + "en promotion") pour lister TOUS les jeux
  * actuellement gratuits suite a une promotion, y compris les offres individuelles d'un
- * editeur qui n'apparaissent pas dans la section "specials" mise en avant par Steam
- * (endpoint precedemment utilise, qui ne couvrait que les grosses soldes saisonnieres).
+ * editeur qui n'apparaissent pas dans la section "specials" mise en avant par Steam.
  *
  * ATTENTION : Steam ne propose pas d'API officielle structuree pour ce cas precis, donc
  * cette fonction "scrape" un fragment HTML retourne par le moteur de recherche. C'est
@@ -28,36 +27,40 @@ async function checkSteamFreeGames() {
     timeout: 10000
   });
 
-  // --- DIAGNOSTIC TEMPORAIRE : a retirer une fois le scraping confirme fonctionnel ---
-  console.log('[SOCIAL][DEBUG] Steam - cles de la reponse :', Object.keys(data || {}));
-  console.log('[SOCIAL][DEBUG] Steam - total_count :', data?.total_count);
-  console.log('[SOCIAL][DEBUG] Steam - results_html length :', data?.results_html?.length || 0);
-  console.log('[SOCIAL][DEBUG] Steam - extrait results_html :', (data?.results_html || '').slice(0, 500));
-  // --- FIN DIAGNOSTIC ---
-
   const html = data?.results_html || '';
 
-  // Chaque resultat est un bloc <a data-ds-appid="..." ...>...<span class="title">Nom</span>...<img src="...">...
-  // ...eventuellement <div class="discount_original_price">XX,XX€</div>...</a>
-  const rowRegex = /data-ds-appid="(\d+)"[\s\S]*?<span class="title">([^<]+)<\/span>[\s\S]*?<img src="([^"]+)"[\s\S]*?(?:<div class="discount_original_price">([^<]+)<\/div>)?[\s\S]*?<\/a>/g;
+  // Decoupe le HTML en un bloc par jeu, en utilisant le debut de chaque lien de resultat
+  // comme separateur. Beaucoup plus robuste qu'une seule regex geante : chaque info
+  // (titre, image, prix) est ensuite cherchee independamment DANS son bloc, peu importe
+  // l'ordre exact des balises utilise par Steam.
+  const rows = html.split(/<a href="https:\/\/store\.steampowered\.com\/app\//).slice(1);
 
   const freeGames = [];
-  let match;
-  while ((match = rowRegex.exec(html)) !== null) {
-    const [, appId, title, imageUrl, originalPriceRaw] = match;
+  for (const row of rows) {
+    const appIdMatch = row.match(/^(\d+)/);
+    const titleMatch = row.match(/<span class="title">([^<]+)<\/span>/);
+    const imgMatch = row.match(/<img src="([^"]+)"/);
+    const originalPriceMatch = row.match(/<div class="discount_original_price">([^<]+)<\/div>/);
+
+    if (!appIdMatch || !titleMatch) continue; // ligne inattendue, on l'ignore plutot que de planter
+
+    const appId = appIdMatch[1];
+    const originalPriceRaw = originalPriceMatch?.[1];
     const originalPrice = originalPriceRaw
       ? parseFloat(originalPriceRaw.replace(/[^\d,.]/g, '').replace(',', '.')) || null
       : null;
 
     freeGames.push({
-      title: title.trim(),
+      title: titleMatch[1].trim(),
       url: `https://store.steampowered.com/app/${appId}`,
-      imageUrl,
+      imageUrl: imgMatch?.[1] || null,
       appId: Number(appId),
       originalPrice,
       currency: 'EUR'
     });
   }
+
+  console.log(`[SOCIAL][DEBUG] Steam - ${rows.length} bloc(s) trouvé(s) dans le HTML, ${freeGames.length} jeu(x) extrait(s) avec succès`);
 
   return { freeGames };
 }

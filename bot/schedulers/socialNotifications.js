@@ -4,7 +4,7 @@ const { checkTwitch } = require('../utils/socialPollers/twitch');
 const { checkYoutube } = require('../utils/socialPollers/youtube');
 const { checkTiktok } = require('../utils/socialPollers/tiktok');
 const { checkEpicGames } = require('../utils/socialPollers/epicgames');
-const { checkSteamFreeGames } = require('../utils/socialPollers/steam');
+const { checkSteamFreeGames, fetchSteamDescription } = require('../utils/socialPollers/steam');
 
 const CHECK_INTERVAL_MS = 5 * 60_000; // toutes les 5 minutes (raisonnable pour eviter le rate limit des APIs)
 
@@ -158,6 +158,7 @@ async function processSteam(client, account) {
   if (!isFirstCheck && newGames.length > 0) {
     console.log(`[SOCIAL] ${newGames.length} nouveau(x) jeu(x) gratuit(s) détecté(s) sur Steam :`, newGames.map(g => g.title).join(', '));
     for (const game of newGames) {
+      game.description = await fetchSteamDescription(game.appId);
       const embed = formatFreeGameEmbed(game, {
         platformLabel: 'Steam',
         color: '#1b2838',

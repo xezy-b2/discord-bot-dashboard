@@ -63,4 +63,34 @@ async function checkSteamFreeGames() {
   return { freeGames };
 }
 
-module.exports = { checkSteamFreeGames };
+/**
+ * Récupère la description courte d'un jeu via l'API officielle Steam (gratuite, pas de clé requise).
+ * Appelée uniquement pour les jeux nouvellement détectés (pas à chaque vérification), pour limiter
+ * le nombre de requêtes.
+ * @param {number} appId
+ * @returns {Promise<string>} - chaîne vide si indisponible
+ */
+async function fetchSteamDescription(appId) {
+  try {
+    const { data } = await axios.get('https://store.steampowered.com/api/appdetails', {
+      params: { appids: appId, l: 'french', cc: 'fr' },
+      timeout: 8000
+    });
+
+    const entry = data?.[appId];
+    if (!entry?.success) return '';
+
+    const raw = entry.data?.short_description || '';
+    // Nettoyage defensif : retire d'eventuelles balises HTML residuelles et les entites courantes
+    return raw
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .trim();
+  } catch (err) {
+    return ''; // pas bloquant : l'embed s'affiche simplement sans description
+  }
+}
+
+module.exports = { checkSteamFreeGames, fetchSteamDescription };

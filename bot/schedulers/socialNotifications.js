@@ -8,11 +8,63 @@ const { checkSteamFreeGames } = require('../utils/socialPollers/steam');
 
 const CHECK_INTERVAL_MS = 5 * 60_000; // toutes les 5 minutes (raisonnable pour eviter le rate limit des APIs)
 
+const EPIC_LOGO_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Epic_Games_logo.svg/240px-Epic_Games_logo.svg.png';
+const STEAM_LOGO_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/240px-Steam_icon_logo.svg.png';
+
+/** Envoie l'embed dans le salon configure, avec un footer "nom du serveur" + horodatage automatique */
 async function notify(client, account, embed) {
   const channel = await client.channels.fetch(account.channelId).catch(() => null);
   if (!channel) return;
+
+  if (channel.guild) {
+    embed.setFooter({ text: channel.guild.name, iconURL: channel.guild.iconURL() || undefined });
+  }
+  embed.setTimestamp();
+
   const content = account.message ? account.message : undefined;
   channel.send({ content, embeds: [embed] }).catch(() => {});
+}
+
+/**
+ * Construit un embed "jeu gratuit" avec description en citation, prix barré, date de fin
+ * + compte a rebours (si connue) et lien direct vers la boutique.
+ */
+function formatFreeGameEmbed(game, { platformLabel, color, thumbnailUrl }) {
+  const embed = new EmbedBuilder()
+    .setColor(color)
+    .setTitle(`${game.title} gratuit sur ${platformLabel} !`)
+    .setURL(game.url)
+    .setThumbnail(thumbnailUrl);
+
+  if (game.imageUrl) embed.setImage(game.imageUrl);
+
+  const lines = [];
+
+  if (game.description) {
+    lines.push(`> ${game.description.replace(/\n/g, '\n> ')}`, '');
+  }
+
+  if (game.originalPrice) {
+    const symbol = game.currency === 'EUR' ? '€' : (game.currency || '');
+    const priceStr = `${game.originalPrice.toFixed(2).replace('.', ',')} ${symbol}`.trim();
+    let priceLine = `~~${priceStr}~~ **Gratuit**`;
+
+    if (game.endDate) {
+      const end = new Date(game.endDate);
+      const daysLeft = Math.max(0, Math.ceil((end - Date.now()) / 86_400_000));
+      const formattedDate = end.toLocaleDateString('fr-FR');
+      priceLine += ` jusqu'au ${formattedDate} ( dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''} )`;
+    }
+
+    lines.push(priceLine);
+  } else {
+    lines.push('**Gratuit dès maintenant**');
+  }
+
+  lines.push(`🔗 [Ouvrir dans la boutique !](${game.url})`);
+
+  embed.setDescription(lines.join('\n'));
+  return embed;
 }
 
 async function processTwitch(client, account) {
@@ -26,8 +78,7 @@ async function processTwitch(client, account) {
       .setDescription(result.title || '')
       .addFields({ name: 'Jeu', value: result.gameName || 'Inconnu' })
       .setURL(result.url)
-      .setImage(result.thumbnailUrl ? `${result.thumbnailUrl}?t=${Date.now()}` : null)
-      .setTimestamp();
+      .setImage(result.thumbnailUrl ? `${result.thumbnailUrl}?t=${Date.now()}` : null);
     await notify(client, account, embed);
   }
 
@@ -45,8 +96,7 @@ async function processYoutube(client, account) {
       .setTitle(`📺 Nouvelle vidéo de ${account.displayName || account.identifier}`)
       .setDescription(result.title)
       .setURL(result.url)
-      .setImage(result.thumbnailUrl || null)
-      .setTimestamp();
+      .setImage(result.thumbnailUrl || null);
     await notify(client, account, embed);
   }
 
@@ -62,8 +112,7 @@ async function processTiktok(client, account) {
     const embed = new EmbedBuilder()
       .setColor('#000000')
       .setTitle(`🎵 Nouvelle vidéo TikTok de ${account.displayName || account.identifier}`)
-      .setURL(result.url)
-      .setTimestamp();
+      .setURL(result.url);
     await notify(client, account, embed);
   }
 
@@ -79,12 +128,11 @@ async function processEpicGames(client, account) {
 
   if (!isFirstCheck && newGames.length > 0) {
     for (const game of newGames) {
-      const embed = new EmbedBuilder()
-        .setColor('#313131')
-        .setTitle(`🎮 Jeu gratuit sur Epic Games : ${game.title}`)
-        .setURL(game.url)
-        .setImage(game.imageUrl || null)
-        .setTimestamp();
+      const embed = formatFreeGameEmbed(game, {
+        platformLabel: "l'Epic Games Store",
+        color: '#313131',
+        thumbnailUrl: EPIC_LOGO_URL
+      });
       await notify(client, account, embed);
     }
   }
@@ -100,12 +148,11 @@ async function processSteam(client, account) {
 
   if (!isFirstCheck && newGames.length > 0) {
     for (const game of newGames) {
-      const embed = new EmbedBuilder()
-        .setColor('#1b2838')
-        .setTitle(`🎮 Jeu gratuit sur Steam : ${game.title}`)
-        .setURL(game.url)
-        .setImage(game.imageUrl || null)
-        .setTimestamp();
+      const embed = formatFreeGameEmbed(game, {
+        platformLabel: 'Steam',
+        color: '#1b2838',
+        thumbnailUrl: STEAM_LOGO_URL
+      });
       await notify(client, account, embed);
     }
   }

@@ -150,11 +150,13 @@ async function processEpicGames(client, account) {
 
 async function processSteam(client, account) {
   const result = await checkSteamFreeGames();
+  console.log(`[SOCIAL] Steam : ${result.freeGames.length} jeu(x) gratuit(s) trouvé(s) au total (${result.freeGames.map(g => g.title).join(', ') || 'aucun'})`);
   const isFirstCheck = account.lastState === null;
   const previousTitles = account.lastState?.titles || [];
   const newGames = result.freeGames.filter(g => !previousTitles.includes(g.title));
 
   if (!isFirstCheck && newGames.length > 0) {
+    console.log(`[SOCIAL] ${newGames.length} nouveau(x) jeu(x) gratuit(s) détecté(s) sur Steam :`, newGames.map(g => g.title).join(', '));
     for (const game of newGames) {
       const embed = formatFreeGameEmbed(game, {
         platformLabel: 'Steam',

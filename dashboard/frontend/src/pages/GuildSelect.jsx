@@ -3,6 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
+const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID;
+
+// Permissions par defaut proposees a l'invitation (Administrateur, pratique en test).
+// Affine ce nombre si tu veux limiter les droits du bot des l'invitation.
+const DEFAULT_PERMISSIONS = '8';
+
+function inviteUrl(guildId) {
+  const params = new URLSearchParams({
+    client_id: DISCORD_CLIENT_ID,
+    scope: 'bot applications.commands',
+    permissions: DEFAULT_PERMISSIONS,
+    guild_id: guildId,
+    disable_guild_select: 'true'
+  });
+  return `https://discord.com/oauth2/authorize?${params.toString()}`;
+}
+
 export default function GuildSelect() {
   const [guilds, setGuilds] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,6 +33,14 @@ export default function GuildSelect() {
   const iconUrl = (g) => g.icon
     ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=128`
     : null;
+
+  const handleClick = (g) => {
+    if (g.botPresent) {
+      navigate(`/dashboard/${g.id}/welcome`);
+    } else {
+      window.open(inviteUrl(g.id), '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
     <div className="min-h-screen px-6 py-12 max-w-5xl mx-auto">
@@ -33,9 +58,8 @@ export default function GuildSelect() {
         {guilds.map(g => (
           <button
             key={g.id}
-            disabled={!g.botPresent}
-            onClick={() => navigate(`/dashboard/${g.id}/welcome`)}
-            className={`card p-5 text-left flex items-center gap-4 transition hover:border-signal-500/40 ${!g.botPresent ? 'opacity-40 cursor-not-allowed' : ''}`}
+            onClick={() => handleClick(g)}
+            className={`card p-5 text-left flex items-center gap-4 transition hover:border-signal-500/40 group ${!g.botPresent ? 'opacity-70 hover:opacity-100' : ''}`}
           >
             {iconUrl(g) ? (
               <img src={iconUrl(g)} alt="" className="w-12 h-12 rounded-full" />
@@ -46,7 +70,11 @@ export default function GuildSelect() {
             )}
             <div className="min-w-0">
               <p className="font-semibold truncate">{g.name}</p>
-              <p className="text-xs text-white/40">{g.botPresent ? 'Bot présent' : 'Bot non invité'}</p>
+              {g.botPresent ? (
+                <p className="text-xs text-white/40">Bot présent</p>
+              ) : (
+                <p className="text-xs text-signal-400 group-hover:underline">+ Inviter le bot ici</p>
+              )}
             </div>
           </button>
         ))}

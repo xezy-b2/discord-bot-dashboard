@@ -28,6 +28,15 @@ const CardConfigSchema = new Schema({
   avatarY: { type: Number, default: 50, min: 0, max: 100 }, // position verticale du centre de l'avatar, en % de la hauteur
   avatarSize: { type: Number, default: 51, min: 5, max: 100 }, // diametre de l'avatar, en % de la hauteur de la carte
 
+  // Position du bloc de texte (titre+sous-titre+compteur) : null = automatique (a droite de l'avatar, centre verticalement)
+  textX: { type: Number, default: null, min: 0, max: 100 }, // en % de la largeur
+  textY: { type: Number, default: null, min: 0, max: 100 }, // en % de la hauteur
+
+  // Tailles de police independantes, en pixels
+  titleSize: { type: Number, default: 48, min: 10, max: 100 },
+  subtitleSize: { type: Number, default: 32, min: 10, max: 100 },
+  memberCountSize: { type: Number, default: 22, min: 8, max: 60 },
+
   // Embed (si mode embed/both)
   embedColor: { type: String, default: '#5865F2' },
   embedThumbnail: { type: Boolean, default: true }, // petite miniature avatar (haut droite)

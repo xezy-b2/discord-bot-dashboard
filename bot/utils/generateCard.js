@@ -81,24 +81,35 @@ async function generateCard(cfg, data) {
   // --- Texte (masquable si le fond custom contient deja son propre texte) ---
   if (cfg.showText !== false) {
     const avatarRightEdge = cfg.showAvatar !== false ? avatarCenterX + avatarSize / 2 : 0;
-    const textStartX = Math.max(avatarRightEdge + 50, 90);
+
+    // Position : automatique (a droite de l'avatar, centre verticalement) sauf si explicitement definie
+    const textStartX = cfg.textX != null
+      ? WIDTH * (Math.min(Math.max(cfg.textX, 0), 100) / 100)
+      : Math.max(avatarRightEdge + 50, 90);
+    const textCenterY = cfg.textY != null
+      ? HEIGHT * (Math.min(Math.max(cfg.textY, 0), 100) / 100)
+      : HEIGHT / 2;
+
+    const titleSize = cfg.titleSize ?? 48;
+    const subtitleSize = cfg.subtitleSize ?? 32;
+    const memberCountSize = cfg.memberCountSize ?? 22;
 
     ctx.fillStyle = cfg.textColor || '#ffffff';
-    ctx.font = '48px "Poppins Bold"';
+    ctx.font = `${titleSize}px "Poppins Bold"`;
     ctx.textBaseline = 'alphabetic';
-    ctx.fillText((cfg.title || 'BIENVENUE').toUpperCase(), textStartX, HEIGHT / 2 - 15);
+    ctx.fillText((cfg.title || 'BIENVENUE').toUpperCase(), textStartX, textCenterY - 15);
 
     const subtitle = (cfg.subtitle || '{username}')
       .replace('{username}', data.username)
       .replace('{tag}', data.tag);
-    ctx.font = '32px "Poppins Regular"';
+    ctx.font = `${subtitleSize}px "Poppins Regular"`;
     ctx.fillStyle = cfg.accentColor || '#5865F2';
-    ctx.fillText(subtitle, textStartX, HEIGHT / 2 + 30);
+    ctx.fillText(subtitle, textStartX, textCenterY + 30);
 
     if (cfg.showMemberCount !== false && data.memberCount) {
-      ctx.font = '22px "Poppins Regular"';
+      ctx.font = `${memberCountSize}px "Poppins Regular"`;
       ctx.fillStyle = 'rgba(255,255,255,0.75)';
-      ctx.fillText(`Membre #${data.memberCount}`, textStartX, HEIGHT / 2 + 70);
+      ctx.fillText(`Membre #${data.memberCount}`, textStartX, textCenterY + 70);
     }
   }
 

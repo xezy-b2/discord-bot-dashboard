@@ -81,35 +81,37 @@ async function generateCard(cfg, data) {
   // --- Texte (masquable si le fond custom contient deja son propre texte) ---
   if (cfg.showText !== false) {
     const avatarRightEdge = cfg.showAvatar !== false ? avatarCenterX + avatarSize / 2 : 0;
-
-    // Position : automatique (a droite de l'avatar, centre verticalement) sauf si explicitement definie
-    const textStartX = cfg.textX != null
-      ? WIDTH * (Math.min(Math.max(cfg.textX, 0), 100) / 100)
-      : Math.max(avatarRightEdge + 50, 90);
-    const textCenterY = cfg.textY != null
-      ? HEIGHT * (Math.min(Math.max(cfg.textY, 0), 100) / 100)
-      : HEIGHT / 2;
+    const autoX = Math.max(avatarRightEdge + 50, 90);
+    const pct = (v) => Math.min(Math.max(v, 0), 100) / 100;
 
     const titleSize = cfg.titleSize ?? 48;
     const subtitleSize = cfg.subtitleSize ?? 32;
     const memberCountSize = cfg.memberCountSize ?? 22;
 
+    const titleX = cfg.titleX != null ? WIDTH * pct(cfg.titleX) : autoX;
+    const titleY = cfg.titleY != null ? HEIGHT * pct(cfg.titleY) : HEIGHT / 2 - 15;
+    const subtitleX = cfg.subtitleX != null ? WIDTH * pct(cfg.subtitleX) : autoX;
+    const subtitleY = cfg.subtitleY != null ? HEIGHT * pct(cfg.subtitleY) : HEIGHT / 2 + 30;
+    const memberX = cfg.memberCountX != null ? WIDTH * pct(cfg.memberCountX) : autoX;
+    const memberY = cfg.memberCountY != null ? HEIGHT * pct(cfg.memberCountY) : HEIGHT / 2 + 70;
+
+    ctx.textBaseline = 'alphabetic';
+
     ctx.fillStyle = cfg.textColor || '#ffffff';
     ctx.font = `${titleSize}px "Poppins Bold"`;
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillText((cfg.title || 'BIENVENUE').toUpperCase(), textStartX, textCenterY - 15);
+    ctx.fillText((cfg.title || 'BIENVENUE').toUpperCase(), titleX, titleY);
 
     const subtitle = (cfg.subtitle || '{username}')
       .replace('{username}', data.username)
       .replace('{tag}', data.tag);
     ctx.font = `${subtitleSize}px "Poppins Regular"`;
     ctx.fillStyle = cfg.accentColor || '#5865F2';
-    ctx.fillText(subtitle, textStartX, textCenterY + 30);
+    ctx.fillText(subtitle, subtitleX, subtitleY);
 
     if (cfg.showMemberCount !== false && data.memberCount) {
       ctx.font = `${memberCountSize}px "Poppins Regular"`;
       ctx.fillStyle = 'rgba(255,255,255,0.75)';
-      ctx.fillText(`Membre #${data.memberCount}`, textStartX, textCenterY + 70);
+      ctx.fillText(`Membre #${data.memberCount}`, memberX, memberY);
     }
   }
 

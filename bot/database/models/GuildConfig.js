@@ -28,9 +28,14 @@ const CardConfigSchema = new Schema({
   avatarY: { type: Number, default: 50, min: 0, max: 100 }, // position verticale du centre de l'avatar, en % de la hauteur
   avatarSize: { type: Number, default: 51, min: 5, max: 100 }, // diametre de l'avatar, en % de la hauteur de la carte
 
-  // Position du bloc de texte (titre+sous-titre+compteur) : null = automatique (a droite de l'avatar, centre verticalement)
-  textX: { type: Number, default: null, min: 0, max: 100 }, // en % de la largeur
-  textY: { type: Number, default: null, min: 0, max: 100 }, // en % de la hauteur
+  // Position INDEPENDANTE de chaque element de texte : null = automatique (a droite de l'avatar,
+  // empile verticalement dans l'ordre titre > sous-titre > compteur)
+  titleX: { type: Number, default: null, min: 0, max: 100 },
+  titleY: { type: Number, default: null, min: 0, max: 100 },
+  subtitleX: { type: Number, default: null, min: 0, max: 100 },
+  subtitleY: { type: Number, default: null, min: 0, max: 100 },
+  memberCountX: { type: Number, default: null, min: 0, max: 100 },
+  memberCountY: { type: Number, default: null, min: 0, max: 100 },
 
   // Tailles de police independantes, en pixels
   titleSize: { type: Number, default: 48, min: 10, max: 100 },

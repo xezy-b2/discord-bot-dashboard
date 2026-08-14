@@ -235,47 +235,44 @@ export default function WelcomeLeaveEditor({ type }) {
                 </div>
               )}
 
-              {cfg.showText && (
-                <div className="space-y-4 pt-2 border-t border-white/5">
-                  <div className="flex items-center justify-between">
-                    <p className="label mb-0">Position du texte</p>
-                    <Toggle
-                      checked={cfg.textX == null}
-                      onChange={v => update(v ? { textX: null, textY: null } : { textX: 50, textY: 50 })}
-                      label="Automatique"
-                    />
-                  </div>
+              {cfg.showText && [
+                { key: 'title', label: 'Titre', sizeMin: 10, sizeMax: 100 },
+                { key: 'subtitle', label: 'Sous-titre', sizeMin: 10, sizeMax: 100 },
+                ...(cfg.showMemberCount ? [{ key: 'memberCount', label: 'N° de membre', sizeMin: 8, sizeMax: 60 }] : [])
+              ].map(el => {
+                const xKey = `${el.key}X`;
+                const yKey = `${el.key}Y`;
+                const sizeKey = `${el.key}Size`;
+                const isAuto = cfg[xKey] == null;
 
-                  {cfg.textX != null && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="label">Horizontal — départ à gauche ({cfg.textX}%)</label>
-                        <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.textX} onChange={e => update({ textX: Number(e.target.value) })} />
+                return (
+                  <div key={el.key} className="space-y-3 pt-3 border-t border-white/5">
+                    <div className="flex items-center justify-between">
+                      <p className="label mb-0">{el.label}</p>
+                      <Toggle
+                        checked={isAuto}
+                        onChange={v => update(v ? { [xKey]: null, [yKey]: null } : { [xKey]: 50, [yKey]: 50 })}
+                        label="Position automatique"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className={isAuto ? 'opacity-30 pointer-events-none' : ''}>
+                        <label className="label">Horizontal ({cfg[xKey] ?? 50}%)</label>
+                        <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg[xKey] ?? 50} onChange={e => update({ [xKey]: Number(e.target.value) })} />
+                      </div>
+                      <div className={isAuto ? 'opacity-30 pointer-events-none' : ''}>
+                        <label className="label">Vertical ({cfg[yKey] ?? 50}%)</label>
+                        <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg[yKey] ?? 50} onChange={e => update({ [yKey]: Number(e.target.value) })} />
                       </div>
                       <div>
-                        <label className="label">Vertical — centre du bloc ({cfg.textY}%)</label>
-                        <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.textY} onChange={e => update({ textY: Number(e.target.value) })} />
+                        <label className="label">Taille ({cfg[sizeKey]}px)</label>
+                        <input type="range" min={el.sizeMin} max={el.sizeMax} className="w-full accent-signal-500" value={cfg[sizeKey]} onChange={e => update({ [sizeKey]: Number(e.target.value) })} />
                       </div>
                     </div>
-                  )}
-
-                  <p className="label mb-0 pt-1">Taille du texte</p>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="label">Titre ({cfg.titleSize}px)</label>
-                      <input type="range" min="10" max="100" className="w-full accent-signal-500" value={cfg.titleSize} onChange={e => update({ titleSize: Number(e.target.value) })} />
-                    </div>
-                    <div>
-                      <label className="label">Sous-titre ({cfg.subtitleSize}px)</label>
-                      <input type="range" min="10" max="100" className="w-full accent-signal-500" value={cfg.subtitleSize} onChange={e => update({ subtitleSize: Number(e.target.value) })} />
-                    </div>
-                    <div>
-                      <label className="label">N° de membre ({cfg.memberCountSize}px)</label>
-                      <input type="range" min="8" max="60" className="w-full accent-signal-500" value={cfg.memberCountSize} onChange={e => update({ memberCountSize: Number(e.target.value) })} />
-                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })}
             </div>
           )}
 

@@ -97,13 +97,17 @@ async function generateCard(cfg, data) {
 
     ctx.textBaseline = 'alphabetic';
 
+    // Variables disponibles dans le titre ET le sous-titre : {username} {tag} {server}
+    const applyVars = (str) => (str || '')
+      .replace('{username}', data.username)
+      .replace('{tag}', data.tag)
+      .replace('{server}', data.serverName || '');
+
     ctx.fillStyle = cfg.textColor || '#ffffff';
     ctx.font = `${titleSize}px "Poppins Bold"`;
-    ctx.fillText((cfg.title || 'BIENVENUE').toUpperCase(), titleX, titleY);
+    ctx.fillText(applyVars(cfg.title || 'BIENVENUE').toUpperCase(), titleX, titleY);
 
-    const subtitle = (cfg.subtitle || '{username}')
-      .replace('{username}', data.username)
-      .replace('{tag}', data.tag);
+    const subtitle = applyVars(cfg.subtitle || '{username}');
     ctx.font = `${subtitleSize}px "Poppins Regular"`;
     ctx.fillStyle = cfg.accentColor || '#5865F2';
     ctx.fillText(subtitle, subtitleX, subtitleY);

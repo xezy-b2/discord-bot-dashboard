@@ -180,6 +180,9 @@ export default function WelcomeLeaveEditor({ type }) {
                   <input className="input-field" value={cfg.subtitle} onChange={e => update({ subtitle: e.target.value })} />
                 </div>
               </div>
+              <p className="text-[11px] text-white/30 -mt-2">
+                Variables utilisables ici : <code className="text-white/50">{'{username}'}</code> <code className="text-white/50">{'{tag}'}</code> <code className="text-white/50">{'{server}'}</code>
+              </p>
 
               <Toggle checked={cfg.showText} onChange={v => update({ showText: v })} label="Afficher le titre/sous-titre (désactive si ton image de fond a déjà son propre texte)" />
 

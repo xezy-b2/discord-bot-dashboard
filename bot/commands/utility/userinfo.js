@@ -47,6 +47,23 @@ module.exports = {
         { name: '🏅 Badges', value: badgesText }
       );
 
+    // Tag de serveur (nouveau systeme "primary guild" de Discord)
+    if (user.primaryGuild?.identityEnabled && user.primaryGuild?.tag) {
+      embed.addFields({ name: '🏷️ Tag de serveur', value: user.primaryGuild.tag, inline: true });
+    }
+
+    // Nameplate (badge decoratif en forme de pilule sous le pseudo)
+    if (user.collectibles?.nameplate) {
+      const label = user.collectibles.nameplate.label || 'Équipée';
+      embed.addFields({ name: '✨ Nameplate', value: label, inline: true });
+    }
+
+    // Decoration d'avatar (l'anneau/cadre autour de la photo de profil)
+    const decorationUrl = user.avatarDecorationURL?.();
+    if (decorationUrl) {
+      embed.addFields({ name: '🖼️ Décoration d\'avatar', value: `[Voir](${decorationUrl})`, inline: true });
+    }
+
     if (member) {
       embed.addFields(
         { name: '📥 A rejoint le', value: member.joinedTimestamp ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:D>` : 'Inconnu', inline: true },

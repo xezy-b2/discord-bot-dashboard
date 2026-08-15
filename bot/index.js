@@ -58,10 +58,12 @@ client.on('guildCreate', async (guild) => {
   const { startRecurringMessagesScheduler } = require('./schedulers/recurringMessages');
   const { startBirthdaysScheduler } = require('./schedulers/birthdays');
   const { startSocialNotificationsScheduler } = require('./schedulers/socialNotifications');
+  const { startRemindersScheduler } = require('./schedulers/reminders');
 
   startRecurringMessagesScheduler(client);
   startBirthdaysScheduler(client);
   startSocialNotificationsScheduler(client);
+  startRemindersScheduler(client);
 })();
 
 process.on('unhandledRejection', (err) => console.error('[UNHANDLED]', err));

@@ -1,4 +1,5 @@
 const GuildConfig = require('../database/models/GuildConfig');
+const Afk = require('../database/models/Afk');
 const { addXp } = require('../utils/levelSystem');
 const { analyzeMessage } = require('../utils/automod');
 const { formatVariables } = require('../utils/generateCard');
@@ -7,6 +8,28 @@ module.exports = {
   name: 'messageCreate',
   async execute(message, client) {
     if (message.author.bot || !message.guild) return;
+
+    // --- AFK : retour d'absence ---
+    const ownAfk = await Afk.findOneAndDelete({ guildId: message.guild.id, userId: message.author.id });
+    if (ownAfk) {
+      const currentName = message.member?.nickname || '';
+      if (currentName.startsWith('[AFK] ')) {
+        message.member.setNickname(ownAfk.originalNickname).catch(() => {});
+      }
+      message.reply(`👋 Bon retour ${message.author}, ton statut AFK a été retiré.`).catch(() => {});
+    }
+
+    // --- AFK : notifier si un membre mentionne quelqu'un d'absent ---
+    if (message.mentions.users.size > 0) {
+      const mentionedIds = [...message.mentions.users.keys()].filter(id => id !== message.author.id);
+      if (mentionedIds.length) {
+        const afkMentioned = await Afk.find({ guildId: message.guild.id, userId: { $in: mentionedIds } });
+        for (const afk of afkMentioned) {
+          const sinceTs = Math.floor(afk.since.getTime() / 1000);
+          message.reply(`💤 <@${afk.userId}> est AFK depuis <t:${sinceTs}:R> : *${afk.reason}*`).catch(() => {});
+        }
+      }
+    }
 
     const config = await GuildConfig.findOne({ guildId: message.guild.id });
     if (!config) return;

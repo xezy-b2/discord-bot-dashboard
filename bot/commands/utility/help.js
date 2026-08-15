@@ -11,9 +11,11 @@ module.exports = {
       .setTitle('📖 Aide')
       .setDescription('Gère l\'intégralité du bot (bienvenue, modération, niveaux...) depuis le **dashboard web** !')
       .addFields(
-        { name: '🛡️ Modération', value: '`/kick` `/ban` `/mute` `/warn` `/clear`' },
+        { name: '🛡️ Modération', value: '`/kick` `/ban` `/unban` `/mute` `/unmute` `/warn` `/warnings` `/clear` `/slowmode` `/lock` `/unlock` `/nickname`' },
         { name: '📈 Niveaux', value: '`/rank` `/leaderboard`' },
-        { name: '⚙️ Configuration', value: 'Tout se configure via le dashboard : bienvenue, départ, automod, économie, commandes custom, reaction roles, logs.' }
+        { name: '🎂 Anniversaires', value: '`/anniversaire definir` `/anniversaire retirer` `/anniversaire liste`' },
+        { name: '🔧 Utilitaires', value: '`/userinfo` `/serverinfo` `/afk` `/remindme` `/ping` `/help`' },
+        { name: '⚙️ Configuration', value: 'Tout se configure via le dashboard : bienvenue, départ, rôles automatiques, automod, économie, commandes custom, reaction roles, tickets, messages récurrents, notifications sociales, logs.' }
       )
       .setFooter({ text: 'Dashboard : ' + (process.env.DASHBOARD_URL || 'http://localhost:5173') });
 

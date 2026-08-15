@@ -1,5 +1,6 @@
 const { handleRoleButton, handleRoleSelect } = require('../utils/rolePanelHandler');
 const { handleTicketCreate, handleTicketClaim, handleTicketClose } = require('../utils/ticketHandler');
+const { handleEmbedCreatorModalSubmit, handleEmbedCreatorButtonInteraction } = require('../utils/embedCreatorHandler');
 
 module.exports = {
   name: 'interactionCreate',
@@ -21,11 +22,19 @@ module.exports = {
       return;
     }
 
+    if (interaction.isModalSubmit()) {
+      if (interaction.customId.startsWith('embedCreatorModal_')) return handleEmbedCreatorModalSubmit(interaction);
+      return;
+    }
+
     if (interaction.isButton()) {
       if (interaction.customId.startsWith('rr_')) return handleRoleButton(interaction);
       if (interaction.customId === 'ticket_create') return handleTicketCreate(interaction);
       if (interaction.customId === 'ticket_claim') return handleTicketClaim(interaction);
       if (interaction.customId === 'ticket_close') return handleTicketClose(interaction);
+      if (interaction.customId.startsWith('embed-edit-preview_') || interaction.customId.startsWith('embed-send-preview_')) {
+        return handleEmbedCreatorButtonInteraction(interaction);
+      }
       return;
     }
 

@@ -14,7 +14,7 @@ module.exports = {
         { name: '🛡️ Modération', value: '`/kick` `/ban` `/unban` `/mute` `/unmute` `/warn` `/warnings` `/clear` `/slowmode` `/lock` `/unlock` `/nickname`' },
         { name: '📈 Niveaux', value: '`/rank` `/leaderboard`' },
         { name: '🎂 Anniversaires', value: '`/anniversaire definir` `/anniversaire retirer` `/anniversaire liste`' },
-        { name: '🔧 Utilitaires', value: '`/userinfo` `/serverinfo` `/afk` `/remindme` `/ping` `/help`' },
+        { name: '🔧 Utilitaires', value: '`/userinfo` `/serverinfo` `/afk` `/remindme` `/embed-modal` `/ping` `/help`' },
         { name: '⚙️ Configuration', value: 'Tout se configure via le dashboard : bienvenue, départ, rôles automatiques, automod, économie, commandes custom, reaction roles, tickets, messages récurrents, notifications sociales, logs.' }
       )
       .setFooter({ text: 'Dashboard : ' + (process.env.DASHBOARD_URL || 'http://localhost:5173') });

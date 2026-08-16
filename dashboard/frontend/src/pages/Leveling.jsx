@@ -3,6 +3,19 @@ import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import { useGuildMeta } from '../hooks/useGuildMeta';
 import Toggle from '../components/Toggle';
+import CardPreview from '../components/CardPreview';
+
+function ColorField({ label, value, onChange }) {
+  return (
+    <div>
+      <label className="label">{label}</label>
+      <div className="flex items-center gap-2 bg-base-850 border border-white/10 rounded-xl px-2 py-1.5">
+        <input type="color" value={value} onChange={e => onChange(e.target.value)} className="w-7 h-7 rounded cursor-pointer bg-transparent" />
+        <span className="text-xs text-white/50 font-mono">{value}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function Leveling() {
   const { guildId } = useParams();
@@ -18,6 +31,8 @@ export default function Leveling() {
   }, [guildId]);
 
   const update = (patch) => setCfg(prev => ({ ...prev, ...patch }));
+  const updateCard = (patch) => setCfg(prev => ({ ...prev, levelUpCard: { ...prev.levelUpCard, ...patch } }));
+  const updateRankCard = (patch) => setCfg(prev => ({ ...prev, rankCard: { ...prev.rankCard, ...patch } }));
 
   const save = async () => {
     setSaving(true);
@@ -33,17 +48,23 @@ export default function Leveling() {
 
   if (!cfg) return <p className="text-white/40">Chargement...</p>;
 
+  const TEXT_ELEMENTS = [
+    { key: 'title', label: 'Titre' },
+    { key: 'subtitle', label: 'Sous-titre' }
+  ];
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-display text-2xl font-bold">📈 Niveaux & XP</h1>
-          <p className="text-white/40 text-sm mt-1">Configure la progression et les récompenses.</p>
+          <p className="text-white/40 text-sm mt-1">Configure la progression, les récompenses, et personnalise les cartes.</p>
         </div>
         <button onClick={save} disabled={saving} className="btn-primary text-sm">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+      {/* --- Réglages généraux --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mb-6">
         <div className="space-y-6">
           <div className="card p-6">
             <Toggle checked={cfg.enabled} onChange={v => update({ enabled: v })} label="Activer le système de niveaux" />
@@ -71,11 +92,6 @@ export default function Leveling() {
                 <option value="">Salon du message (par défaut)</option>
                 {channels.map(c => <option key={c.id} value={c.id}>#{c.name}</option>)}
               </select>
-            </div>
-
-            <div>
-              <label className="label">Message de niveau (variables : {'{user}'} {'{level}'})</label>
-              <input className="input-field" value={cfg.levelUpMessage} onChange={e => update({ levelUpMessage: e.target.value })} />
             </div>
           </div>
 
@@ -112,6 +128,173 @@ export default function Leveling() {
             {leaderboard.length === 0 && <p className="text-white/30 text-sm">Aucune donnée pour le moment.</p>}
           </div>
         </div>
+      </div>
+
+      {/* --- Carte de passage de niveau --- */}
+      <div className="mb-3">
+        <h2 className="font-display text-lg font-bold">🎉 Message de niveau</h2>
+        <p className="text-white/40 text-sm">Choisis un simple texte, une carte générée personnalisable, ou les deux.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 mb-10">
+        <div className="space-y-6">
+          <div className="card p-6 space-y-4">
+            <label className="label">Format</label>
+            <div className="flex gap-2">
+              {['text', 'card', 'both'].map(m => (
+                <button
+                  key={m}
+                  onClick={() => update({ levelUpMode: m })}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium border transition ${cfg.levelUpMode === m ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
+                >
+                  {m === 'text' ? 'Texte' : m === 'card' ? 'Carte générée' : 'Les deux'}
+                </button>
+              ))}
+            </div>
+
+            {(cfg.levelUpMode === 'text' || cfg.levelUpMode === 'both') && (
+              <div>
+                <label className="label">Message (variables : {'{user}'} {'{level}'})</label>
+                <input className="input-field" value={cfg.levelUpMessage} onChange={e => update({ levelUpMessage: e.target.value })} />
+              </div>
+            )}
+          </div>
+
+          {(cfg.levelUpMode === 'card' || cfg.levelUpMode === 'both') && (
+            <div className="card p-6 space-y-5">
+              <p className="label mb-0">Carte de niveau (variables : {'{username}'} {'{tag}'} {'{server}'} {'{level}'})</p>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Titre</label>
+                  <input className="input-field" value={cfg.levelUpCard.title} onChange={e => updateCard({ title: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">Sous-titre</label>
+                  <input className="input-field" value={cfg.levelUpCard.subtitle} onChange={e => updateCard({ subtitle: e.target.value })} />
+                </div>
+              </div>
+
+              <Toggle checked={cfg.levelUpCard.showText} onChange={v => updateCard({ showText: v })} label="Afficher le titre/sous-titre" />
+
+              <div>
+                <label className="label">Image de fond personnalisée (URL, optionnel)</label>
+                <input className="input-field" placeholder="https://..." value={cfg.levelUpCard.backgroundUrl} onChange={e => updateCard({ backgroundUrl: e.target.value })} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <ColorField label="Fond début" value={cfg.levelUpCard.backgroundColorStart} onChange={v => updateCard({ backgroundColorStart: v })} />
+                <ColorField label="Fond fin" value={cfg.levelUpCard.backgroundColorEnd} onChange={v => updateCard({ backgroundColorEnd: v })} />
+                <ColorField label="Texte" value={cfg.levelUpCard.textColor} onChange={v => updateCard({ textColor: v })} />
+                <ColorField label="Accent" value={cfg.levelUpCard.accentColor} onChange={v => updateCard({ accentColor: v })} />
+              </div>
+
+              <Toggle checked={cfg.levelUpCard.showAvatar} onChange={v => updateCard({ showAvatar: v })} label="Afficher l'avatar" />
+
+              {cfg.levelUpCard.showAvatar && (
+                <div className="grid grid-cols-3 gap-4 pt-2 border-t border-white/5">
+                  <div>
+                    <label className="label">Avatar horizontal ({cfg.levelUpCard.avatarX}%)</label>
+                    <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard.avatarX} onChange={e => updateCard({ avatarX: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <label className="label">Avatar vertical ({cfg.levelUpCard.avatarY}%)</label>
+                    <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard.avatarY} onChange={e => updateCard({ avatarY: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <label className="label">Avatar taille ({cfg.levelUpCard.avatarSize}%)</label>
+                    <input type="range" min="10" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard.avatarSize} onChange={e => updateCard({ avatarSize: Number(e.target.value) })} />
+                  </div>
+                </div>
+              )}
+
+              {cfg.levelUpCard.showText && TEXT_ELEMENTS.map(el => {
+                const xKey = `${el.key}X`, yKey = `${el.key}Y`, sizeKey = `${el.key}Size`;
+                const isAuto = cfg.levelUpCard[xKey] == null;
+                return (
+                  <div key={el.key} className="space-y-3 pt-3 border-t border-white/5">
+                    <div className="flex items-center justify-between">
+                      <p className="label mb-0">{el.label}</p>
+                      <Toggle
+                        checked={isAuto}
+                        onChange={v => updateCard(v ? { [xKey]: null, [yKey]: null } : { [xKey]: 50, [yKey]: 50 })}
+                        label="Position automatique"
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className={isAuto ? 'opacity-30 pointer-events-none' : ''}>
+                        <label className="label">Horizontal ({cfg.levelUpCard[xKey] ?? 50}%)</label>
+                        <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard[xKey] ?? 50} onChange={e => updateCard({ [xKey]: Number(e.target.value) })} />
+                      </div>
+                      <div className={isAuto ? 'opacity-30 pointer-events-none' : ''}>
+                        <label className="label">Vertical ({cfg.levelUpCard[yKey] ?? 50}%)</label>
+                        <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard[yKey] ?? 50} onChange={e => updateCard({ [yKey]: Number(e.target.value) })} />
+                      </div>
+                      <div>
+                        <label className="label">Taille ({cfg.levelUpCard[sizeKey]}px)</label>
+                        <input type="range" min="10" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard[sizeKey]} onChange={e => updateCard({ [sizeKey]: Number(e.target.value) })} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {(cfg.levelUpMode === 'card' || cfg.levelUpMode === 'both') && (
+          <CardPreview guildId={guildId} type="levelup" cfg={cfg.levelUpCard} note="Niveau d'exemple : 7. Ce que verront réellement tes membres en passant de niveau." />
+        )}
+      </div>
+
+      {/* --- Carte /rank --- */}
+      <div className="mb-3">
+        <h2 className="font-display text-lg font-bold">🏆 Carte /rank</h2>
+        <p className="text-white/40 text-sm">Personnalise le visuel affiché par la commande /rank.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+        <div className="card p-6 space-y-5">
+          <div>
+            <label className="label">Image de fond personnalisée (URL, optionnel)</label>
+            <input className="input-field" placeholder="https://..." value={cfg.rankCard.backgroundUrl} onChange={e => updateRankCard({ backgroundUrl: e.target.value })} />
+          </div>
+
+          {cfg.rankCard.backgroundUrl && (
+            <div>
+              <label className="label">Assombrissement du fond ({cfg.rankCard.backgroundOverlayOpacity}%)</label>
+              <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.rankCard.backgroundOverlayOpacity} onChange={e => updateRankCard({ backgroundOverlayOpacity: Number(e.target.value) })} />
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <ColorField label="Fond début (dégradé)" value={cfg.rankCard.backgroundColorStart} onChange={v => updateRankCard({ backgroundColorStart: v })} />
+            <ColorField label="Fond fin (dégradé)" value={cfg.rankCard.backgroundColorEnd} onChange={v => updateRankCard({ backgroundColorEnd: v })} />
+            <ColorField label="Texte" value={cfg.rankCard.textColor} onChange={v => updateRankCard({ textColor: v })} />
+            <ColorField label="Accent (barre XP + niveau)" value={cfg.rankCard.accentColor} onChange={v => updateRankCard({ accentColor: v })} />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 pt-2 border-t border-white/5">
+            <div>
+              <label className="label">Avatar horizontal ({cfg.rankCard.avatarX}%)</label>
+              <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.rankCard.avatarX} onChange={e => updateRankCard({ avatarX: Number(e.target.value) })} />
+            </div>
+            <div>
+              <label className="label">Avatar vertical ({cfg.rankCard.avatarY}%)</label>
+              <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.rankCard.avatarY} onChange={e => updateRankCard({ avatarY: Number(e.target.value) })} />
+            </div>
+            <div>
+              <label className="label">Avatar taille ({cfg.rankCard.avatarSize}%)</label>
+              <input type="range" min="10" max="100" className="w-full accent-signal-500" value={cfg.rankCard.avatarSize} onChange={e => updateRankCard({ avatarSize: Number(e.target.value) })} />
+            </div>
+          </div>
+
+          <p className="text-[11px] text-white/30">
+            Le pseudo, le rang, le niveau et la barre XP se positionnent automatiquement à droite de l'avatar (pas de repositionnement individuel sur cette carte).
+          </p>
+        </div>
+
+        <CardPreview guildId={guildId} type="rank" cfg={cfg.rankCard} note="Valeurs d'exemple : rang #3, niveau 12, 340/500 XP." />
       </div>
     </div>
   );

@@ -97,11 +97,15 @@ async function generateCard(cfg, data) {
 
     ctx.textBaseline = 'alphabetic';
 
-    // Variables disponibles dans le titre ET le sous-titre : {username} {tag} {server}
-    const applyVars = (str) => (str || '')
-      .replace('{username}', data.username)
-      .replace('{tag}', data.tag)
-      .replace('{server}', data.serverName || '');
+    // Variables disponibles dans le titre ET le sous-titre : {username} {tag} {server} {level}
+    const applyVars = (str) => {
+      let result = (str || '')
+        .replace('{username}', data.username)
+        .replace('{tag}', data.tag)
+        .replace('{server}', data.serverName || '');
+      if (data.level != null) result = result.replace('{level}', data.level);
+      return result;
+    };
 
     ctx.fillStyle = cfg.textColor || '#ffffff';
     ctx.font = `${titleSize}px "Poppins Bold"`;

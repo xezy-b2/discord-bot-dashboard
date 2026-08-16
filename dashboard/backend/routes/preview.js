@@ -2,7 +2,66 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth, requireGuildAccess } = require('../middleware/auth');
 const { generateCard, formatVariables } = require('../utils/generateCard');
+const { generateRankCard } = require('../utils/generateRankCard');
 const { getGuildInfo } = require('../utils/discordApi');
+
+function getAvatarUrl(req) {
+  return req.user.avatar
+    ? `https://cdn.discordapp.com/avatars/${req.user.id}/${req.user.avatar}.png?size=256`
+    : `https://cdn.discordapp.com/embed/avatars/${Number(req.user.id.slice(-1)) % 5}.png`;
+}
+
+/**
+ * POST /api/preview/:guildId/levelup
+ * Preview de la carte affichee lors d'un passage de niveau (meme moteur que bienvenue/depart).
+ */
+router.post('/:guildId/levelup', requireAuth, requireGuildAccess, async (req, res) => {
+  try {
+    const cfg = req.body;
+    const guildInfo = await getGuildInfo(req.params.guildId).catch(() => null);
+    const avatarUrl = getAvatarUrl(req);
+
+    const data = {
+      userId: req.user.id,
+      username: req.user.username,
+      tag: req.user.username,
+      serverName: guildInfo?.name || 'Mon Serveur',
+      level: 7, // valeur d'exemple pour l'apercu
+      avatarUrl
+    };
+
+    const buffer = await generateCard(cfg, data);
+    res.json({ image: `data:image/png;base64,${buffer.toString('base64')}` });
+  } catch (err) {
+    console.error('[PREVIEW][LEVELUP]', err);
+    res.status(500).json({ error: 'Erreur lors de la génération du preview' });
+  }
+});
+
+/**
+ * POST /api/preview/:guildId/rank
+ * Preview de la carte /rank, avec des valeurs d'exemple pour rang/niveau/XP.
+ */
+router.post('/:guildId/rank', requireAuth, requireGuildAccess, async (req, res) => {
+  try {
+    const cfg = req.body;
+    const avatarUrl = getAvatarUrl(req);
+
+    const buffer = await generateRankCard(cfg, {
+      username: req.user.username,
+      avatarUrl,
+      rank: 3,
+      level: 12,
+      xp: 340,
+      requiredXp: 500
+    });
+
+    res.json({ image: `data:image/png;base64,${buffer.toString('base64')}` });
+  } catch (err) {
+    console.error('[PREVIEW][RANK]', err);
+    res.status(500).json({ error: 'Erreur lors de la génération du preview' });
+  }
+});
 
 /**
  * POST /api/preview/:guildId/:type   (type = welcome | leave)
@@ -18,10 +77,7 @@ router.post('/:guildId/:type', requireAuth, requireGuildAccess, async (req, res)
     const cfg = req.body; // config live, non sauvegardée
     const guildInfo = await getGuildInfo(guildId).catch(() => null);
 
-    const avatarHash = req.user.avatar;
-    const avatarUrl = avatarHash
-      ? `https://cdn.discordapp.com/avatars/${req.user.id}/${avatarHash}.png?size=256`
-      : `https://cdn.discordapp.com/embed/avatars/${Number(req.user.id.slice(-1)) % 5}.png`;
+    const avatarUrl = getAvatarUrl(req);
 
     const data = {
       userId: req.user.id,

@@ -69,6 +69,18 @@ const AutomodSchema = new Schema({
   action: { type: String, enum: ['delete', 'warn', 'mute', 'kick'], default: 'delete' }
 }, { _id: false });
 
+const RankCardConfigSchema = new Schema({
+  backgroundUrl: { type: String, default: '' },
+  backgroundOverlayOpacity: { type: Number, default: 0, min: 0, max: 100 },
+  backgroundColorStart: { type: String, default: '#23272a' },
+  backgroundColorEnd: { type: String, default: '#23272a' },
+  textColor: { type: String, default: '#ffffff' },
+  accentColor: { type: String, default: '#5865F2' }, // couleur de la barre de progression + niveau
+  avatarX: { type: Number, default: 16, min: 0, max: 100 },
+  avatarY: { type: Number, default: 50, min: 0, max: 100 },
+  avatarSize: { type: Number, default: 65, min: 5, max: 100 }
+}, { _id: false });
+
 const LevelingSchema = new Schema({
   enabled: { type: Boolean, default: true },
   xpMin: { type: Number, default: 15 },
@@ -76,6 +88,12 @@ const LevelingSchema = new Schema({
   cooldownSeconds: { type: Number, default: 60 },
   levelUpChannelId: { type: String, default: null }, // null = envoie dans le salon du message
   levelUpMessage: { type: String, default: 'GG {user}, tu passes niveau **{level}** ! 🎉' },
+  levelUpMode: { type: String, enum: ['text', 'card', 'both'], default: 'text' },
+  levelUpCard: {
+    type: CardConfigSchema,
+    default: () => ({ title: 'NIVEAU UP !', subtitle: '{username}', showMemberCount: false })
+  },
+  rankCard: { type: RankCardConfigSchema, default: () => ({}) },
   ignoredChannels: { type: [String], default: [] },
   roleRewards: [{
     level: Number,

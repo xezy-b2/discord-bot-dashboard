@@ -1,8 +1,9 @@
+const { AttachmentBuilder } = require('discord.js');
 const GuildConfig = require('../database/models/GuildConfig');
 const Afk = require('../database/models/Afk');
 const { addXp } = require('../utils/levelSystem');
 const { analyzeMessage } = require('../utils/automod');
-const { formatVariables } = require('../utils/generateCard');
+const { formatVariables, generateCard } = require('../utils/generateCard');
 
 module.exports = {
   name: 'messageCreate',
@@ -79,15 +80,28 @@ module.exports = {
             ? message.guild.channels.cache.get(config.leveling.levelUpChannelId)
             : message.channel;
 
-          const text = formatVariables(config.leveling.levelUpMessage, {
+          const varData = {
             userId: message.author.id,
             username: message.author.username,
             tag: message.author.tag,
             serverName: message.guild.name,
-            memberCount: message.guild.memberCount
-          }).replace('{level}', result.newLevel);
+            memberCount: message.guild.memberCount,
+            level: result.newLevel,
+            avatarUrl: message.author.displayAvatarURL({ extension: 'png', size: 256 })
+          };
 
-          targetChannel?.send(text).catch(() => {});
+          const mode = config.leveling.levelUpMode || 'text';
+          const payload = {};
+
+          if (mode === 'text' || mode === 'both') {
+            payload.content = formatVariables(config.leveling.levelUpMessage, varData).replace('{level}', result.newLevel);
+          }
+          if (mode === 'card' || mode === 'both') {
+            const buffer = await generateCard(config.leveling.levelUpCard, varData);
+            payload.files = [new AttachmentBuilder(buffer, { name: 'levelup.png' })];
+          }
+
+          targetChannel?.send(payload).catch(() => {});
 
           // Attribution de role recompense si configure pour ce niveau
           const reward = config.leveling.roleRewards.find(r => r.level === result.newLevel);

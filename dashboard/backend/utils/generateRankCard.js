@@ -63,23 +63,25 @@ async function generateRankCard(cfg, data) {
     ctx.restore();
   } catch (e) { /* avatar indisponible, on ignore */ }
 
-  // --- Textes et barre, positionnes a droite de l'avatar ---
+  // --- Textes et barre, positionnes a droite de l'avatar (3 lignes : pseudo > niveau > rang) ---
   const textStartX = avatarCenterX + avatarSize / 2 + 40;
   const barWidth = WIDTH - textStartX - 40;
 
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = cfg.textColor || '#ffffff';
   ctx.font = '34px "Poppins Bold"';
-  ctx.fillText(data.username, textStartX, avatarCenterY - 35);
+  ctx.fillText(data.username, textStartX, avatarCenterY - 50);
 
   ctx.font = '22px "Poppins Regular"';
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText(`Rang #${data.rank}`, textStartX, avatarCenterY - 5);
   ctx.fillStyle = cfg.accentColor || '#5865F2';
-  ctx.fillText(`Niveau ${data.level}`, textStartX + 140, avatarCenterY - 5);
+  ctx.fillText(`Niveau ${data.level}`, textStartX, avatarCenterY - 15);
+
+  ctx.font = '18px "Poppins Regular"';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText(`Rang #${data.rank}`, textStartX, avatarCenterY + 12);
 
   // Barre de progression XP
-  const barY = avatarCenterY + 20;
+  const barY = avatarCenterY + 32;
   const barHeight = 26;
   ctx.fillStyle = 'rgba(255,255,255,0.15)';
   ctx.beginPath();

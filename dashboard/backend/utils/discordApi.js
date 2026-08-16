@@ -44,6 +44,22 @@ async function getGuildInfo(guildId) {
   return data;
 }
 
+/** Récupère les infos publiques d'un utilisateur (pseudo, avatar) via son ID */
+async function getUser(userId) {
+  const { data } = await botApi.get(`/users/${userId}`);
+  return data;
+}
+
+/** Récupère plusieurs utilisateurs en parallèle. Ignore silencieusement ceux introuvables. */
+async function getUsers(userIds) {
+  const results = await Promise.all(
+    userIds.map(id => getUser(id).catch(() => null))
+  );
+  const map = {};
+  userIds.forEach((id, i) => { if (results[i]) map[id] = results[i]; });
+  return map;
+}
+
 /** Envoie un message dans un salon (utilisé pour créer les messages de reaction roles) */
 async function sendMessage(channelId, payload) {
   const { data } = await botApi.post(`/channels/${channelId}/messages`, payload);
@@ -82,6 +98,8 @@ module.exports = {
   getGuildCategories,
   getGuildRoles,
   getGuildInfo,
+  getUser,
+  getUsers,
   sendMessage,
   editMessage,
   addBotReaction,

@@ -116,7 +116,11 @@ export default function Leveling() {
           <div className="space-y-2">
             {leaderboard.map((m, i) => (
               <div key={m.userId} className="flex items-center justify-between text-sm py-1.5 border-b border-white/5 last:border-0">
-                <span className="text-white/60">#{i + 1} <span className="font-mono text-white/40 text-xs">{m.userId}</span></span>
+                <span className="text-white/60 flex items-center gap-2">
+                  #{i + 1}
+                  {m.avatar && <img src={m.avatar} alt="" className="w-5 h-5 rounded-full" />}
+                  <span className={m.username ? '' : 'font-mono text-white/40 text-xs'}>{m.username || m.userId}</span>
+                </span>
                 <span className="text-signal-400 font-medium">Nv. {m.level}</span>
               </div>
             ))}
@@ -136,26 +140,24 @@ export default function Leveling() {
           <div className="card p-6 space-y-4">
             <label className="label">Format</label>
             <div className="flex gap-2">
-              {['text', 'card', 'both'].map(m => (
+              {['text', 'card'].map(m => (
                 <button
                   key={m}
                   onClick={() => update({ levelUpMode: m })}
                   className={`px-4 py-2 rounded-xl text-sm font-medium border transition ${cfg.levelUpMode === m ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
                 >
-                  {m === 'text' ? 'Texte' : m === 'card' ? 'Carte générée' : 'Les deux'}
+                  {m === 'text' ? 'Texte seul' : 'Texte + carte générée'}
                 </button>
               ))}
             </div>
 
-            {(cfg.levelUpMode === 'text' || cfg.levelUpMode === 'both') && (
-              <div>
-                <label className="label">Message (variables : {'{user}'} {'{level}'})</label>
-                <input className="input-field" value={cfg.levelUpMessage} onChange={e => update({ levelUpMessage: e.target.value })} />
-              </div>
-            )}
+            <div>
+              <label className="label">Message (toujours affiché en légende, variables : {'{user}'} {'{level}'})</label>
+              <input className="input-field" value={cfg.levelUpMessage} onChange={e => update({ levelUpMessage: e.target.value })} />
+            </div>
           </div>
 
-          {(cfg.levelUpMode === 'card' || cfg.levelUpMode === 'both') && (
+          {cfg.levelUpMode === 'card' && (
             <div className="card p-6 space-y-5">
               <p className="label mb-0">Carte de niveau (même mise en page que /rank : pseudo, niveau, rang, barre XP)</p>
 
@@ -196,7 +198,7 @@ export default function Leveling() {
           )}
         </div>
 
-        {(cfg.levelUpMode === 'card' || cfg.levelUpMode === 'both') && (
+        {cfg.levelUpMode === 'card' && (
           <CardPreview guildId={guildId} type="levelup" cfg={cfg.levelUpCard} note="Valeurs d'exemple : niveau 7, rang #1, 120/400 XP." />
         )}
       </div>

@@ -95,9 +95,9 @@ module.exports = {
           const mode = config.leveling.levelUpMode || 'text';
           const payload = {};
 
-          if (mode === 'text' || mode === 'both') {
-            payload.content = formatVariables(config.leveling.levelUpMessage, varData).replace('{level}', result.newLevel);
-          }
+          // Le texte accompagne toujours l'annonce (meme en mode "Carte generee" seule) :
+          // il sert de legende au-dessus de l'image.
+          payload.content = formatVariables(config.leveling.levelUpMessage, varData).replace('{level}', result.newLevel);
           if (mode === 'card' || mode === 'both') {
             const rank = await MemberLevel.countDocuments({
               guildId: message.guild.id,

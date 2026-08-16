@@ -89,10 +89,9 @@ const LevelingSchema = new Schema({
   levelUpChannelId: { type: String, default: null }, // null = envoie dans le salon du message
   levelUpMessage: { type: String, default: 'GG {user}, tu passes niveau **{level}** ! 🎉' },
   levelUpMode: { type: String, enum: ['text', 'card', 'both'], default: 'text' },
-  levelUpCard: {
-    type: CardConfigSchema,
-    default: () => ({ title: 'NIVEAU UP !', subtitle: '{username}', showMemberCount: false })
-  },
+  // La carte de passage de niveau reutilise EXACTEMENT le meme moteur que /rank
+  // (pseudo + niveau + rang + barre XP), avec ses propres reglages de fond/avatar/couleurs.
+  levelUpCard: { type: RankCardConfigSchema, default: () => ({}) },
   rankCard: { type: RankCardConfigSchema, default: () => ({}) },
   ignoredChannels: { type: [String], default: [] },
   roleRewards: [{

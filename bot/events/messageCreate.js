@@ -1,9 +1,11 @@
 const { AttachmentBuilder } = require('discord.js');
 const GuildConfig = require('../database/models/GuildConfig');
 const Afk = require('../database/models/Afk');
-const { addXp } = require('../utils/levelSystem');
+const MemberLevel = require('../database/models/MemberLevel');
+const { addXp, xpForLevel } = require('../utils/levelSystem');
 const { analyzeMessage } = require('../utils/automod');
-const { formatVariables, generateCard } = require('../utils/generateCard');
+const { formatVariables } = require('../utils/generateCard');
+const { generateRankCard } = require('../utils/generateRankCard');
 
 module.exports = {
   name: 'messageCreate',
@@ -97,7 +99,19 @@ module.exports = {
             payload.content = formatVariables(config.leveling.levelUpMessage, varData).replace('{level}', result.newLevel);
           }
           if (mode === 'card' || mode === 'both') {
-            const buffer = await generateCard(config.leveling.levelUpCard, varData);
+            const rank = await MemberLevel.countDocuments({
+              guildId: message.guild.id,
+              totalXp: { $gt: result.member.totalXp }
+            }) + 1;
+
+            const buffer = await generateRankCard(config.leveling.levelUpCard, {
+              username: message.author.username,
+              avatarUrl: varData.avatarUrl,
+              rank,
+              level: result.newLevel,
+              xp: result.member.xp,
+              requiredXp: xpForLevel(result.newLevel)
+            });
             payload.files = [new AttachmentBuilder(buffer, { name: 'levelup.png' })];
           }
 

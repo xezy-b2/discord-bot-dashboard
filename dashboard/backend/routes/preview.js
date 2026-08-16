@@ -18,19 +18,17 @@ function getAvatarUrl(req) {
 router.post('/:guildId/levelup', requireAuth, requireGuildAccess, async (req, res) => {
   try {
     const cfg = req.body;
-    const guildInfo = await getGuildInfo(req.params.guildId).catch(() => null);
     const avatarUrl = getAvatarUrl(req);
 
-    const data = {
-      userId: req.user.id,
+    const buffer = await generateRankCard(cfg, {
       username: req.user.username,
-      tag: req.user.username,
-      serverName: guildInfo?.name || 'Mon Serveur',
-      level: 7, // valeur d'exemple pour l'apercu
-      avatarUrl
-    };
+      avatarUrl,
+      rank: 1,
+      level: 7,
+      xp: 120,
+      requiredXp: 400
+    });
 
-    const buffer = await generateCard(cfg, data);
     res.json({ image: `data:image/png;base64,${buffer.toString('base64')}` });
   } catch (err) {
     console.error('[PREVIEW][LEVELUP]', err);

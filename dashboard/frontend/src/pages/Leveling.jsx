@@ -48,11 +48,6 @@ export default function Leveling() {
 
   if (!cfg) return <p className="text-white/40">Chargement...</p>;
 
-  const TEXT_ELEMENTS = [
-    { key: 'title', label: 'Titre' },
-    { key: 'subtitle', label: 'Sous-titre' }
-  ];
-
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -162,88 +157,47 @@ export default function Leveling() {
 
           {(cfg.levelUpMode === 'card' || cfg.levelUpMode === 'both') && (
             <div className="card p-6 space-y-5">
-              <p className="label mb-0">Carte de niveau (variables : {'{username}'} {'{tag}'} {'{server}'} {'{level}'})</p>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label">Titre</label>
-                  <input className="input-field" value={cfg.levelUpCard.title} onChange={e => updateCard({ title: e.target.value })} />
-                </div>
-                <div>
-                  <label className="label">Sous-titre</label>
-                  <input className="input-field" value={cfg.levelUpCard.subtitle} onChange={e => updateCard({ subtitle: e.target.value })} />
-                </div>
-              </div>
-
-              <Toggle checked={cfg.levelUpCard.showText} onChange={v => updateCard({ showText: v })} label="Afficher le titre/sous-titre" />
+              <p className="label mb-0">Carte de niveau (même mise en page que /rank : pseudo, niveau, rang, barre XP)</p>
 
               <div>
                 <label className="label">Image de fond personnalisée (URL, optionnel)</label>
                 <input className="input-field" placeholder="https://..." value={cfg.levelUpCard.backgroundUrl} onChange={e => updateCard({ backgroundUrl: e.target.value })} />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <ColorField label="Fond début" value={cfg.levelUpCard.backgroundColorStart} onChange={v => updateCard({ backgroundColorStart: v })} />
-                <ColorField label="Fond fin" value={cfg.levelUpCard.backgroundColorEnd} onChange={v => updateCard({ backgroundColorEnd: v })} />
-                <ColorField label="Texte" value={cfg.levelUpCard.textColor} onChange={v => updateCard({ textColor: v })} />
-                <ColorField label="Accent" value={cfg.levelUpCard.accentColor} onChange={v => updateCard({ accentColor: v })} />
-              </div>
-
-              <Toggle checked={cfg.levelUpCard.showAvatar} onChange={v => updateCard({ showAvatar: v })} label="Afficher l'avatar" />
-
-              {cfg.levelUpCard.showAvatar && (
-                <div className="grid grid-cols-3 gap-4 pt-2 border-t border-white/5">
-                  <div>
-                    <label className="label">Avatar horizontal ({cfg.levelUpCard.avatarX}%)</label>
-                    <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard.avatarX} onChange={e => updateCard({ avatarX: Number(e.target.value) })} />
-                  </div>
-                  <div>
-                    <label className="label">Avatar vertical ({cfg.levelUpCard.avatarY}%)</label>
-                    <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard.avatarY} onChange={e => updateCard({ avatarY: Number(e.target.value) })} />
-                  </div>
-                  <div>
-                    <label className="label">Avatar taille ({cfg.levelUpCard.avatarSize}%)</label>
-                    <input type="range" min="10" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard.avatarSize} onChange={e => updateCard({ avatarSize: Number(e.target.value) })} />
-                  </div>
+              {cfg.levelUpCard.backgroundUrl && (
+                <div>
+                  <label className="label">Assombrissement du fond ({cfg.levelUpCard.backgroundOverlayOpacity}%)</label>
+                  <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard.backgroundOverlayOpacity} onChange={e => updateCard({ backgroundOverlayOpacity: Number(e.target.value) })} />
                 </div>
               )}
 
-              {cfg.levelUpCard.showText && TEXT_ELEMENTS.map(el => {
-                const xKey = `${el.key}X`, yKey = `${el.key}Y`, sizeKey = `${el.key}Size`;
-                const isAuto = cfg.levelUpCard[xKey] == null;
-                return (
-                  <div key={el.key} className="space-y-3 pt-3 border-t border-white/5">
-                    <div className="flex items-center justify-between">
-                      <p className="label mb-0">{el.label}</p>
-                      <Toggle
-                        checked={isAuto}
-                        onChange={v => updateCard(v ? { [xKey]: null, [yKey]: null } : { [xKey]: 50, [yKey]: 50 })}
-                        label="Position automatique"
-                      />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className={isAuto ? 'opacity-30 pointer-events-none' : ''}>
-                        <label className="label">Horizontal ({cfg.levelUpCard[xKey] ?? 50}%)</label>
-                        <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard[xKey] ?? 50} onChange={e => updateCard({ [xKey]: Number(e.target.value) })} />
-                      </div>
-                      <div className={isAuto ? 'opacity-30 pointer-events-none' : ''}>
-                        <label className="label">Vertical ({cfg.levelUpCard[yKey] ?? 50}%)</label>
-                        <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard[yKey] ?? 50} onChange={e => updateCard({ [yKey]: Number(e.target.value) })} />
-                      </div>
-                      <div>
-                        <label className="label">Taille ({cfg.levelUpCard[sizeKey]}px)</label>
-                        <input type="range" min="10" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard[sizeKey]} onChange={e => updateCard({ [sizeKey]: Number(e.target.value) })} />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              <div className="grid grid-cols-2 gap-4">
+                <ColorField label="Fond début (dégradé)" value={cfg.levelUpCard.backgroundColorStart} onChange={v => updateCard({ backgroundColorStart: v })} />
+                <ColorField label="Fond fin (dégradé)" value={cfg.levelUpCard.backgroundColorEnd} onChange={v => updateCard({ backgroundColorEnd: v })} />
+                <ColorField label="Texte" value={cfg.levelUpCard.textColor} onChange={v => updateCard({ textColor: v })} />
+                <ColorField label="Accent (niveau + barre XP)" value={cfg.levelUpCard.accentColor} onChange={v => updateCard({ accentColor: v })} />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 pt-2 border-t border-white/5">
+                <div>
+                  <label className="label">Avatar horizontal ({cfg.levelUpCard.avatarX}%)</label>
+                  <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard.avatarX} onChange={e => updateCard({ avatarX: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="label">Avatar vertical ({cfg.levelUpCard.avatarY}%)</label>
+                  <input type="range" min="0" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard.avatarY} onChange={e => updateCard({ avatarY: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="label">Avatar taille ({cfg.levelUpCard.avatarSize}%)</label>
+                  <input type="range" min="10" max="100" className="w-full accent-signal-500" value={cfg.levelUpCard.avatarSize} onChange={e => updateCard({ avatarSize: Number(e.target.value) })} />
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         {(cfg.levelUpMode === 'card' || cfg.levelUpMode === 'both') && (
-          <CardPreview guildId={guildId} type="levelup" cfg={cfg.levelUpCard} note="Niveau d'exemple : 7. Ce que verront réellement tes membres en passant de niveau." />
+          <CardPreview guildId={guildId} type="levelup" cfg={cfg.levelUpCard} note="Valeurs d'exemple : niveau 7, rang #1, 120/400 XP." />
         )}
       </div>
 

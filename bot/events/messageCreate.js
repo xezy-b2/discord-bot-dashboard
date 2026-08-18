@@ -115,7 +115,9 @@ module.exports = {
             payload.files = [new AttachmentBuilder(buffer, { name: 'levelup.png' })];
           }
 
-          targetChannel?.send(payload).catch(() => {});
+          targetChannel?.send(payload).catch(err => {
+            console.error('[LEVELING] Échec envoi annonce de niveau :', err.message, '| payload:', JSON.stringify({ content: payload.content, hasFiles: !!payload.files }));
+          });
 
           // Attribution de role recompense si configure pour ce niveau
           const reward = config.leveling.roleRewards.find(r => r.level === result.newLevel);

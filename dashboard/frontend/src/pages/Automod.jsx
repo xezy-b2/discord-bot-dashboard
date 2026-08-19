@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import Toggle from '../components/Toggle';
+import { useGuildMeta } from '../hooks/useGuildMeta';
 
 export default function Automod() {
   const { guildId } = useParams();
+  const { channels, roles } = useGuildMeta(guildId);
   const [cfg, setCfg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [wordInput, setWordInput] = useState('');
@@ -85,6 +87,52 @@ export default function Automod() {
                 <button onClick={() => update({ bannedWords: cfg.bannedWords.filter((_, idx) => idx !== i) })} className="text-white/40 hover:text-red-400">✕</button>
               </span>
             ))}
+          </div>
+        </div>
+
+        <div className="card p-6 space-y-3">
+          <label className="label mb-0">Salons exemptés</label>
+          <p className="text-[11px] text-white/30">Aucune règle d'auto-modération ne s'applique dans les salons sélectionnés.</p>
+          <div className="flex flex-wrap gap-2">
+            {channels.map(c => {
+              const active = cfg.ignoredChannels.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => update({
+                    ignoredChannels: active
+                      ? cfg.ignoredChannels.filter(id => id !== c.id)
+                      : [...cfg.ignoredChannels, c.id]
+                  })}
+                  className={`text-xs px-3 py-1.5 rounded-lg border transition ${active ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
+                >
+                  #{c.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="card p-6 space-y-3">
+          <label className="label mb-0">Rôles exemptés</label>
+          <p className="text-[11px] text-white/30">Les membres ayant un de ces rôles ne sont jamais concernés par l'auto-modération.</p>
+          <div className="flex flex-wrap gap-2">
+            {roles.map(r => {
+              const active = cfg.ignoredRoles.includes(r.id);
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => update({
+                    ignoredRoles: active
+                      ? cfg.ignoredRoles.filter(id => id !== r.id)
+                      : [...cfg.ignoredRoles, r.id]
+                  })}
+                  className={`text-xs px-3 py-1.5 rounded-lg border transition ${active ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
+                >
+                  {r.name}
+                </button>
+              );
+            })}
           </div>
         </div>
 

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import Toggle from '../components/Toggle';
 import { useGuildMeta } from '../hooks/useGuildMeta';
+import Modal from '../components/Modal';
 
 function ActionSelect({ value, onChange }) {
   return (
@@ -88,30 +89,30 @@ function FeatureCard({ title, description, checked, onToggle, children }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="card p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-semibold text-sm">{title}</p>
-          <p className="text-xs text-white/40 mt-1">{description}</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => setOpen(!open)}
-            title="Réglages"
-            className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition ${open ? 'bg-signal-500/20 text-signal-400' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
-          >
-            ⚙️
-          </button>
-          <Toggle checked={checked} onChange={onToggle} />
+    <>
+      <div className="card p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-semibold text-sm">{title}</p>
+            <p className="text-xs text-white/40 mt-1">{description}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setOpen(true)}
+              title="Réglages"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm bg-white/5 text-white/40 hover:bg-white/10 transition"
+            >
+              ⚙️
+            </button>
+            <Toggle checked={checked} onChange={onToggle} />
+          </div>
         </div>
       </div>
 
-      {open && (
-        <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
-          {children}
-        </div>
-      )}
-    </div>
+      <Modal open={open} onClose={() => setOpen(false)} title={title}>
+        {children}
+      </Modal>
+    </>
   );
 }
 

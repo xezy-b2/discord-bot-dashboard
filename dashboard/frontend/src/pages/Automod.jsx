@@ -75,7 +75,9 @@ function FeatureCard({ title, description, checked, onToggle, children }) {
   );
 }
 
-const emptyFeature = (extra = {}) => ({ enabled: false, ignoredChannels: [], ignoredRoles: [], ...extra });
+function isPlainObject(val) {
+  return typeof val === 'object' && val !== null && !Array.isArray(val);
+}
 
 export default function Automod() {
   const { guildId } = useParams();
@@ -85,8 +87,24 @@ export default function Automod() {
   const [wordInput, setWordInput] = useState('');
   const [userIdInput, setUserIdInput] = useState('');
 
+  // Reconstruit une forme garantie, quelle que soit la structure deja presente en base
+  // (protege contre les anciennes configs a plat, incompatibles avec le nouveau schema imbrique).
+  const normalize = (raw = {}) => ({
+    enabled: raw.enabled ?? false,
+    bannedWords: { enabled: false, words: [], ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.bannedWords) ? raw.bannedWords : {}) },
+    invite: { enabled: false, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.invite) ? raw.invite : {}) },
+    link: { enabled: false, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.link) ? raw.link : {}) },
+    caps: { enabled: false, percent: 70, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.caps) ? raw.caps : {}) },
+    emojiSpam: { enabled: false, maxEmojis: 10, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.emojiSpam) ? raw.emojiSpam : {}) },
+    mentionSpam: { enabled: false, limit: 5, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.mentionSpam) ? raw.mentionSpam : {}) },
+    pingProtection: { enabled: false, protectedUserIds: [], protectedRoleIds: [], ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.pingProtection) ? raw.pingProtection : {}) },
+    spam: { enabled: true, threshold: 5, intervalMs: 5000, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.spam) ? raw.spam : {}) },
+    markdown: { enabled: false, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.markdown) ? raw.markdown : {}) },
+    action: raw.action || 'delete'
+  });
+
   useEffect(() => {
-    api.get(`/config/${guildId}`).then(res => setCfg(res.data.automod));
+    api.get(`/config/${guildId}`).then(res => setCfg(normalize(res.data.automod)));
   }, [guildId]);
 
   const updateGlobal = (patch) => setCfg(prev => ({ ...prev, ...patch }));

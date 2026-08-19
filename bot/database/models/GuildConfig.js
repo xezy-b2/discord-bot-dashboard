@@ -54,36 +54,60 @@ const CardConfigSchema = new Schema({
   dmMessage: { type: String, default: 'Bienvenue sur {server} ! N’oublie pas de lire le règlement.' }
 }, { _id: false });
 
+// Chaque fonctionnalite d'automod a ses propres exemptions (salons + roles), independamment des autres
+const ExemptFields = {
+  ignoredChannels: { type: [String], default: [] },
+  ignoredRoles: { type: [String], default: [] }
+};
+
 const AutomodSchema = new Schema({
   enabled: { type: Boolean, default: false }, // interrupteur general (coupe tout d'un coup)
 
-  antiBannedWords: { type: Boolean, default: false },
-  bannedWords: { type: [String], default: [] },
+  bannedWords: {
+    enabled: { type: Boolean, default: false },
+    words: { type: [String], default: [] },
+    ...ExemptFields
+  },
+  invite: {
+    enabled: { type: Boolean, default: false },
+    ...ExemptFields
+  },
+  link: {
+    enabled: { type: Boolean, default: false },
+    ...ExemptFields
+  },
+  caps: {
+    enabled: { type: Boolean, default: false },
+    percent: { type: Number, default: 70, min: 10, max: 100 },
+    ...ExemptFields
+  },
+  emojiSpam: {
+    enabled: { type: Boolean, default: false },
+    maxEmojis: { type: Number, default: 10, min: 1, max: 50 },
+    ...ExemptFields
+  },
+  mentionSpam: {
+    enabled: { type: Boolean, default: false },
+    limit: { type: Number, default: 5, min: 1, max: 30 },
+    ...ExemptFields
+  },
+  pingProtection: {
+    enabled: { type: Boolean, default: false },
+    protectedUserIds: { type: [String], default: [] },
+    protectedRoleIds: { type: [String], default: [] },
+    ...ExemptFields
+  },
+  spam: {
+    enabled: { type: Boolean, default: true },
+    threshold: { type: Number, default: 5 },
+    intervalMs: { type: Number, default: 5000 },
+    ...ExemptFields
+  },
+  markdown: {
+    enabled: { type: Boolean, default: false },
+    ...ExemptFields
+  },
 
-  antiInvite: { type: Boolean, default: false },
-  antiLink: { type: Boolean, default: false },
-
-  antiCaps: { type: Boolean, default: false },
-  antiCapsPercent: { type: Number, default: 70, min: 10, max: 100 },
-
-  antiEmojiSpam: { type: Boolean, default: false },
-  maxEmojis: { type: Number, default: 10, min: 1, max: 50 },
-
-  antiMentionSpam: { type: Boolean, default: false },
-  mentionSpamLimit: { type: Number, default: 5, min: 1, max: 30 },
-
-  antiPingProtection: { type: Boolean, default: false }, // protege des membres/roles precis contre les pings
-  protectedUserIds: { type: [String], default: [] },
-  protectedRoleIds: { type: [String], default: [] },
-
-  antiSpam: { type: Boolean, default: true },
-  spamThreshold: { type: Number, default: 5 }, // messages
-  spamIntervalMs: { type: Number, default: 5000 },
-
-  antiMarkdown: { type: Boolean, default: false }, // bloque spoilers/titres/blocs de code abusifs
-
-  ignoredChannels: { type: [String], default: [] },
-  ignoredRoles: { type: [String], default: [] },
   action: { type: String, enum: ['delete', 'warn', 'mute', 'kick'], default: 'delete' }
 }, { _id: false });
 

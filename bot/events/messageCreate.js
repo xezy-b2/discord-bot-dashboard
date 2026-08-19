@@ -39,19 +39,14 @@ module.exports = {
 
     // --- AUTOMOD ---
     if (config.automod?.enabled) {
-      const isIgnoredChannel = config.automod.ignoredChannels.includes(message.channel.id);
-      const isIgnoredRole = message.member?.roles.cache.some(r => config.automod.ignoredRoles.includes(r.id));
-
-      if (!isIgnoredChannel && !isIgnoredRole) {
-        const violation = analyzeMessage(message, config.automod);
-        if (violation) {
-          await message.delete().catch(() => {});
-          const warnMsg = await message.channel.send(
-            `⚠️ ${message.author}, ton message a été supprimé (raison : \`${violation}\`).`
-          ).catch(() => {});
-          if (warnMsg) setTimeout(() => warnMsg.delete().catch(() => {}), 5000);
-          return; // on ne compte pas l'XP sur un message supprimé
-        }
+      const violation = analyzeMessage(message, config.automod);
+      if (violation) {
+        await message.delete().catch(() => {});
+        const warnMsg = await message.channel.send(
+          `⚠️ ${message.author}, ton message a été supprimé (raison : \`${violation}\`).`
+        ).catch(() => {});
+        if (warnMsg) setTimeout(() => warnMsg.delete().catch(() => {}), 5000);
+        return; // on ne compte pas l'XP sur un message supprimé
       }
     }
 

@@ -4,6 +4,46 @@ import api from '../api/client';
 import Toggle from '../components/Toggle';
 import { useGuildMeta } from '../hooks/useGuildMeta';
 
+function ExemptPicker({ channels, roles, value, onChange }) {
+  const toggle = (key, id) => {
+    const list = value[key] || [];
+    onChange({ [key]: list.includes(id) ? list.filter(x => x !== id) : [...list, id] });
+  };
+
+  return (
+    <div className="space-y-3 pt-3 border-t border-white/5">
+      <div>
+        <label className="label mb-2">Salons exemptés</label>
+        <div className="flex flex-wrap gap-1.5">
+          {channels.map(c => (
+            <button
+              key={c.id}
+              onClick={() => toggle('ignoredChannels', c.id)}
+              className={`text-[11px] px-2 py-1 rounded-md border transition ${value.ignoredChannels?.includes(c.id) ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
+            >
+              #{c.name}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <label className="label mb-2">Rôles exemptés</label>
+        <div className="flex flex-wrap gap-1.5">
+          {roles.map(r => (
+            <button
+              key={r.id}
+              onClick={() => toggle('ignoredRoles', r.id)}
+              className={`text-[11px] px-2 py-1 rounded-md border transition ${value.ignoredRoles?.includes(r.id) ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
+            >
+              {r.name}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FeatureCard({ title, description, checked, onToggle, children }) {
   const [open, setOpen] = useState(false);
 
@@ -15,20 +55,18 @@ function FeatureCard({ title, description, checked, onToggle, children }) {
           <p className="text-xs text-white/40 mt-1">{description}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {children && (
-            <button
-              onClick={() => setOpen(!open)}
-              title="Réglages"
-              className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition ${open ? 'bg-signal-500/20 text-signal-400' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
-            >
-              ⚙️
-            </button>
-          )}
+          <button
+            onClick={() => setOpen(!open)}
+            title="Réglages"
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition ${open ? 'bg-signal-500/20 text-signal-400' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+          >
+            ⚙️
+          </button>
           <Toggle checked={checked} onChange={onToggle} />
         </div>
       </div>
 
-      {open && children && (
+      {open && (
         <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
           {children}
         </div>
@@ -36,6 +74,8 @@ function FeatureCard({ title, description, checked, onToggle, children }) {
     </div>
   );
 }
+
+const emptyFeature = (extra = {}) => ({ enabled: false, ignoredChannels: [], ignoredRoles: [], ...extra });
 
 export default function Automod() {
   const { guildId } = useParams();
@@ -49,7 +89,8 @@ export default function Automod() {
     api.get(`/config/${guildId}`).then(res => setCfg(res.data.automod));
   }, [guildId]);
 
-  const update = (patch) => setCfg(prev => ({ ...prev, ...patch }));
+  const updateGlobal = (patch) => setCfg(prev => ({ ...prev, ...patch }));
+  const updateFeature = (key, patch) => setCfg(prev => ({ ...prev, [key]: { ...prev[key], ...patch } }));
 
   const save = async () => {
     setSaving(true);
@@ -59,113 +100,123 @@ export default function Automod() {
 
   if (!cfg) return <p className="text-white/40">Chargement...</p>;
 
-  const toggleInList = (key, id) => {
-    const list = cfg[key];
-    update({ [key]: list.includes(id) ? list.filter(x => x !== id) : [...list, id] });
-  };
-
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-display text-2xl font-bold">🛡️ Auto-modération</h1>
-          <p className="text-white/40 text-sm mt-1">Configure les différentes fonctionnalités d'auto-modération, une par une.</p>
+          <p className="text-white/40 text-sm mt-1">Chaque fonctionnalité a ses propres réglages et ses propres exemptions de salons/rôles.</p>
         </div>
         <button onClick={save} disabled={saving} className="btn-primary text-sm">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
       </div>
 
       <div className="card p-6 mb-6 max-w-3xl">
-        <Toggle checked={cfg.enabled} onChange={v => update({ enabled: v })} label="Activer l'auto-modération (interrupteur général)" />
+        <Toggle checked={cfg.enabled} onChange={v => updateGlobal({ enabled: v })} label="Activer l'auto-modération (interrupteur général)" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mb-6">
         <FeatureCard
           title="Vocabulaire interdit"
           description="Détection de mots ou vocabulaire interdit."
-          checked={cfg.antiBannedWords}
-          onToggle={v => update({ antiBannedWords: v })}
+          checked={cfg.bannedWords.enabled}
+          onToggle={v => updateFeature('bannedWords', { enabled: v })}
         >
           <div className="flex gap-2">
             <input className="input-field" value={wordInput} onChange={e => setWordInput(e.target.value)} placeholder="Ajouter un mot..." />
             <button
               className="btn-ghost text-sm shrink-0"
-              onClick={() => { if (wordInput.trim()) { update({ bannedWords: [...cfg.bannedWords, wordInput.trim()] }); setWordInput(''); } }}
+              onClick={() => { if (wordInput.trim()) { updateFeature('bannedWords', { words: [...cfg.bannedWords.words, wordInput.trim()] }); setWordInput(''); } }}
             >
               Ajouter
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {cfg.bannedWords.map((w, i) => (
+            {cfg.bannedWords.words.map((w, i) => (
               <span key={i} className="text-xs bg-white/5 px-2.5 py-1 rounded-lg flex items-center gap-2">
                 {w}
-                <button onClick={() => update({ bannedWords: cfg.bannedWords.filter((_, idx) => idx !== i) })} className="text-white/40 hover:text-red-400">✕</button>
+                <button onClick={() => updateFeature('bannedWords', { words: cfg.bannedWords.words.filter((_, idx) => idx !== i) })} className="text-white/40 hover:text-red-400">✕</button>
               </span>
             ))}
           </div>
+          <ExemptPicker channels={channels} roles={roles} value={cfg.bannedWords} onChange={p => updateFeature('bannedWords', p)} />
         </FeatureCard>
 
         <FeatureCard
           title="Invitations Discord"
           description="Détection de liens d'invitations Discord."
-          checked={cfg.antiInvite}
-          onToggle={v => update({ antiInvite: v })}
-        />
+          checked={cfg.invite.enabled}
+          onToggle={v => updateFeature('invite', { enabled: v })}
+        >
+          <ExemptPicker channels={channels} roles={roles} value={cfg.invite} onChange={p => updateFeature('invite', p)} />
+        </FeatureCard>
 
         <FeatureCard
           title="Liens externes"
           description="Détection de l'utilisation de liens externes."
-          checked={cfg.antiLink}
-          onToggle={v => update({ antiLink: v })}
-        />
+          checked={cfg.link.enabled}
+          onToggle={v => updateFeature('link', { enabled: v })}
+        >
+          <ExemptPicker channels={channels} roles={roles} value={cfg.link} onChange={p => updateFeature('link', p)} />
+        </FeatureCard>
 
         <FeatureCard
           title="Majuscules excessives"
           description="Détection de l'utilisation abusive de majuscules."
-          checked={cfg.antiCaps}
-          onToggle={v => update({ antiCaps: v })}
+          checked={cfg.caps.enabled}
+          onToggle={v => updateFeature('caps', { enabled: v })}
         >
-          <label className="label">Seuil ({cfg.antiCapsPercent}% de majuscules)</label>
-          <input type="range" min="10" max="100" className="w-full accent-signal-500" value={cfg.antiCapsPercent} onChange={e => update({ antiCapsPercent: Number(e.target.value) })} />
+          <label className="label">Seuil ({cfg.caps.percent}% de majuscules)</label>
+          <input type="range" min="10" max="100" className="w-full accent-signal-500" value={cfg.caps.percent} onChange={e => updateFeature('caps', { percent: Number(e.target.value) })} />
+          <ExemptPicker channels={channels} roles={roles} value={cfg.caps} onChange={p => updateFeature('caps', p)} />
         </FeatureCard>
 
         <FeatureCard
           title="Émojis excessifs"
           description="Détection de l'utilisation abusive d'émojis."
-          checked={cfg.antiEmojiSpam}
-          onToggle={v => update({ antiEmojiSpam: v })}
+          checked={cfg.emojiSpam.enabled}
+          onToggle={v => updateFeature('emojiSpam', { enabled: v })}
         >
           <label className="label">Nombre d'émojis max par message</label>
-          <input type="number" min="1" max="50" className="input-field w-24" value={cfg.maxEmojis} onChange={e => update({ maxEmojis: Number(e.target.value) })} />
+          <input type="number" min="1" max="50" className="input-field w-24" value={cfg.emojiSpam.maxEmojis} onChange={e => updateFeature('emojiSpam', { maxEmojis: Number(e.target.value) })} />
+          <ExemptPicker channels={channels} roles={roles} value={cfg.emojiSpam} onChange={p => updateFeature('emojiSpam', p)} />
         </FeatureCard>
 
         <FeatureCard
           title="Mentions excessives"
           description="Détection de l'utilisation abusive de mentions."
-          checked={cfg.antiMentionSpam}
-          onToggle={v => update({ antiMentionSpam: v })}
+          checked={cfg.mentionSpam.enabled}
+          onToggle={v => updateFeature('mentionSpam', { enabled: v })}
         >
           <label className="label">Nombre de mentions max par message</label>
-          <input type="number" min="1" max="30" className="input-field w-24" value={cfg.mentionSpamLimit} onChange={e => update({ mentionSpamLimit: Number(e.target.value) })} />
+          <input type="number" min="1" max="30" className="input-field w-24" value={cfg.mentionSpam.limit} onChange={e => updateFeature('mentionSpam', { limit: Number(e.target.value) })} />
+          <ExemptPicker channels={channels} roles={roles} value={cfg.mentionSpam} onChange={p => updateFeature('mentionSpam', p)} />
         </FeatureCard>
 
         <FeatureCard
           title="Pings interdits"
           description="Protège des membres/rôles précis contre les mentions."
-          checked={cfg.antiPingProtection}
-          onToggle={v => update({ antiPingProtection: v })}
+          checked={cfg.pingProtection.enabled}
+          onToggle={v => updateFeature('pingProtection', { enabled: v })}
         >
           <div>
-            <label className="label mb-2">Rôles protégés</label>
-            <div className="flex flex-wrap gap-2">
-              {roles.map(r => (
-                <button
-                  key={r.id}
-                  onClick={() => toggleInList('protectedRoleIds', r.id)}
-                  className={`text-xs px-2.5 py-1 rounded-lg border transition ${cfg.protectedRoleIds.includes(r.id) ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
-                >
-                  {r.name}
-                </button>
-              ))}
+            <label className="label mb-2">Rôles protégés (interdits de mention)</label>
+            <div className="flex flex-wrap gap-1.5">
+              {roles.map(r => {
+                const active = cfg.pingProtection.protectedRoleIds.includes(r.id);
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => updateFeature('pingProtection', {
+                      protectedRoleIds: active
+                        ? cfg.pingProtection.protectedRoleIds.filter(id => id !== r.id)
+                        : [...cfg.pingProtection.protectedRoleIds, r.id]
+                    })}
+                    className={`text-[11px] px-2 py-1 rounded-md border transition ${active ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
+                  >
+                    {r.name}
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div>
@@ -174,90 +225,60 @@ export default function Automod() {
               <input className="input-field" placeholder="ID Discord du membre" value={userIdInput} onChange={e => setUserIdInput(e.target.value)} />
               <button
                 className="btn-ghost text-sm shrink-0"
-                onClick={() => { if (userIdInput.trim()) { update({ protectedUserIds: [...cfg.protectedUserIds, userIdInput.trim()] }); setUserIdInput(''); } }}
+                onClick={() => { if (userIdInput.trim()) { updateFeature('pingProtection', { protectedUserIds: [...cfg.pingProtection.protectedUserIds, userIdInput.trim()] }); setUserIdInput(''); } }}
               >
                 Ajouter
               </button>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
-              {cfg.protectedUserIds.map((id, i) => (
+              {cfg.pingProtection.protectedUserIds.map((id, i) => (
                 <span key={i} className="text-xs bg-white/5 px-2.5 py-1 rounded-lg flex items-center gap-2 font-mono">
                   {id}
-                  <button onClick={() => update({ protectedUserIds: cfg.protectedUserIds.filter((_, idx) => idx !== i) })} className="text-white/40 hover:text-red-400">✕</button>
+                  <button onClick={() => updateFeature('pingProtection', { protectedUserIds: cfg.pingProtection.protectedUserIds.filter((_, idx) => idx !== i) })} className="text-white/40 hover:text-red-400">✕</button>
                 </span>
               ))}
             </div>
           </div>
+          <ExemptPicker channels={channels} roles={roles} value={cfg.pingProtection} onChange={p => updateFeature('pingProtection', p)} />
         </FeatureCard>
 
         <FeatureCard
           title="Spam de messages"
           description="Détection de l'envoi massif de messages."
-          checked={cfg.antiSpam}
-          onToggle={v => update({ antiSpam: v })}
+          checked={cfg.spam.enabled}
+          onToggle={v => updateFeature('spam', { enabled: v })}
         >
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Seuil (messages)</label>
-              <input type="number" className="input-field" value={cfg.spamThreshold} onChange={e => update({ spamThreshold: Number(e.target.value) })} />
+              <input type="number" className="input-field" value={cfg.spam.threshold} onChange={e => updateFeature('spam', { threshold: Number(e.target.value) })} />
             </div>
             <div>
               <label className="label">Intervalle (ms)</label>
-              <input type="number" className="input-field" value={cfg.spamIntervalMs} onChange={e => update({ spamIntervalMs: Number(e.target.value) })} />
+              <input type="number" className="input-field" value={cfg.spam.intervalMs} onChange={e => updateFeature('spam', { intervalMs: Number(e.target.value) })} />
             </div>
           </div>
+          <ExemptPicker channels={channels} roles={roles} value={cfg.spam} onChange={p => updateFeature('spam', p)} />
         </FeatureCard>
 
         <FeatureCard
           title="Markdown interdit"
           description="Détection de spoilers, titres et blocs de code abusifs."
-          checked={cfg.antiMarkdown}
-          onToggle={v => update({ antiMarkdown: v })}
-        />
+          checked={cfg.markdown.enabled}
+          onToggle={v => updateFeature('markdown', { enabled: v })}
+        >
+          <ExemptPicker channels={channels} roles={roles} value={cfg.markdown} onChange={p => updateFeature('markdown', p)} />
+        </FeatureCard>
       </div>
 
-      <div className="space-y-6 max-w-3xl">
-        <div className="card p-6 space-y-3">
-          <label className="label mb-0">Salons exemptés</label>
-          <p className="text-[11px] text-white/30">Aucune règle d'auto-modération ne s'applique dans les salons sélectionnés.</p>
-          <div className="flex flex-wrap gap-2">
-            {channels.map(c => (
-              <button
-                key={c.id}
-                onClick={() => toggleInList('ignoredChannels', c.id)}
-                className={`text-xs px-3 py-1.5 rounded-lg border transition ${cfg.ignoredChannels.includes(c.id) ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
-              >
-                #{c.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="card p-6 space-y-3">
-          <label className="label mb-0">Rôles exemptés</label>
-          <p className="text-[11px] text-white/30">Les membres ayant un de ces rôles ne sont jamais concernés par l'auto-modération.</p>
-          <div className="flex flex-wrap gap-2">
-            {roles.map(r => (
-              <button
-                key={r.id}
-                onClick={() => toggleInList('ignoredRoles', r.id)}
-                className={`text-xs px-3 py-1.5 rounded-lg border transition ${cfg.ignoredRoles.includes(r.id) ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
-              >
-                {r.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="card p-6">
-          <label className="label">Action en cas d'infraction</label>
-          <select className="input-field" value={cfg.action} onChange={e => update({ action: e.target.value })}>
-            <option value="delete">Supprimer le message</option>
-            <option value="warn">Supprimer + avertir</option>
-            <option value="mute">Supprimer + mute 10 min</option>
-            <option value="kick">Supprimer + expulser</option>
-          </select>
-        </div>
+      <div className="card p-6 max-w-3xl">
+        <label className="label">Action en cas d'infraction (s'applique à toutes les fonctionnalités)</label>
+        <select className="input-field" value={cfg.action} onChange={e => updateGlobal({ action: e.target.value })}>
+          <option value="delete">Supprimer le message</option>
+          <option value="warn">Supprimer + avertir</option>
+          <option value="mute">Supprimer + mute 10 min</option>
+          <option value="kick">Supprimer + expulser</option>
+        </select>
       </div>
     </div>
   );

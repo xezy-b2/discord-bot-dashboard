@@ -2,6 +2,7 @@ const { AttachmentBuilder } = require('discord.js');
 const GuildConfig = require('../database/models/GuildConfig');
 const Afk = require('../database/models/Afk');
 const MemberLevel = require('../database/models/MemberLevel');
+const Warning = require('../database/models/Warning');
 const { addXp, xpForLevel } = require('../utils/levelSystem');
 const { analyzeMessage } = require('../utils/automod');
 const { formatVariables } = require('../utils/generateCard');
@@ -42,8 +43,43 @@ module.exports = {
       const violation = analyzeMessage(message, config.automod);
       if (violation) {
         await message.delete().catch(() => {});
+
+        const REASON_LABELS = {
+          invite_link: 'lien d\'invitation Discord',
+          external_link: 'lien externe',
+          banned_word: 'mot interdit',
+          excessive_caps: 'majuscules excessives',
+          emoji_spam: 'émojis excessifs',
+          mention_spam: 'mentions excessives',
+          forbidden_mention: 'mention d\'un membre/rôle protégé',
+          markdown_abuse: 'markdown interdit',
+          spam: 'spam de messages'
+        };
+        const reasonLabel = REASON_LABELS[violation.reason] || violation.reason;
+
+        let actionText = 'Message supprimé';
+        try {
+          if (violation.action === 'warn') {
+            await Warning.create({
+              guildId: message.guild.id,
+              userId: message.author.id,
+              moderatorId: client.user.id,
+              reason: `Auto-modération : ${reasonLabel}`
+            });
+            actionText = 'Message supprimé + avertissement';
+          } else if (violation.action === 'mute') {
+            await message.member?.timeout(10 * 60 * 1000, `Auto-modération : ${reasonLabel}`).catch(() => {});
+            actionText = 'Message supprimé + mute 10 min';
+          } else if (violation.action === 'kick') {
+            await message.member?.kick(`Auto-modération : ${reasonLabel}`).catch(() => {});
+            actionText = 'Message supprimé + expulsion';
+          }
+        } catch (err) {
+          console.error('[AUTOMOD] Erreur application de la sanction :', err.message);
+        }
+
         const warnMsg = await message.channel.send(
-          `⚠️ ${message.author}, ton message a été supprimé (raison : \`${violation}\`).`
+          `⚠️ ${message.author}, ${actionText.toLowerCase()} (raison : \`${reasonLabel}\`).`
         ).catch(() => {});
         if (warnMsg) setTimeout(() => warnMsg.delete().catch(() => {}), 5000);
         return; // on ne compte pas l'XP sur un message supprimé

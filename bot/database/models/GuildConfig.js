@@ -60,55 +60,64 @@ const ExemptFields = {
   ignoredRoles: { type: [String], default: [] }
 };
 
+const ActionField = { type: String, enum: ['delete', 'warn', 'mute', 'kick'], default: 'delete' };
+
 const AutomodSchema = new Schema({
   enabled: { type: Boolean, default: false }, // interrupteur general (coupe tout d'un coup)
 
   bannedWords: {
     enabled: { type: Boolean, default: false },
     words: { type: [String], default: [] },
+    action: ActionField,
     ...ExemptFields
   },
   invite: {
     enabled: { type: Boolean, default: false },
+    action: ActionField,
     ...ExemptFields
   },
   link: {
     enabled: { type: Boolean, default: false },
+    action: ActionField,
     ...ExemptFields
   },
   caps: {
     enabled: { type: Boolean, default: false },
     percent: { type: Number, default: 70, min: 10, max: 100 },
+    action: ActionField,
     ...ExemptFields
   },
   emojiSpam: {
     enabled: { type: Boolean, default: false },
     maxEmojis: { type: Number, default: 10, min: 1, max: 50 },
+    action: ActionField,
     ...ExemptFields
   },
   mentionSpam: {
     enabled: { type: Boolean, default: false },
     limit: { type: Number, default: 5, min: 1, max: 30 },
+    action: ActionField,
     ...ExemptFields
   },
   pingProtection: {
     enabled: { type: Boolean, default: false },
     protectedUserIds: { type: [String], default: [] },
     protectedRoleIds: { type: [String], default: [] },
+    action: ActionField,
     ...ExemptFields
   },
   spam: {
     enabled: { type: Boolean, default: true },
     threshold: { type: Number, default: 5 },
     intervalMs: { type: Number, default: 5000 },
+    action: ActionField,
     ...ExemptFields
   },
   markdown: {
     enabled: { type: Boolean, default: false },
+    action: ActionField,
     ...ExemptFields
-  },
-
-  action: { type: String, enum: ['delete', 'warn', 'mute', 'kick'], default: 'delete' }
+  }
 }, { _id: false });
 
 const RankCardConfigSchema = new Schema({

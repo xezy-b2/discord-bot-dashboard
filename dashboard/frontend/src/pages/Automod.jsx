@@ -4,6 +4,20 @@ import api from '../api/client';
 import Toggle from '../components/Toggle';
 import { useGuildMeta } from '../hooks/useGuildMeta';
 
+function ActionSelect({ value, onChange }) {
+  return (
+    <div>
+      <label className="label mb-2">Sanction en cas d'infraction</label>
+      <select className="input-field" value={value} onChange={e => onChange(e.target.value)}>
+        <option value="delete">Supprimer le message</option>
+        <option value="warn">Supprimer + avertir</option>
+        <option value="mute">Supprimer + mute 10 min</option>
+        <option value="kick">Supprimer + expulser</option>
+      </select>
+    </div>
+  );
+}
+
 function ExemptPicker({ channels, roles, value, onChange }) {
   const [channelToAdd, setChannelToAdd] = useState('');
   const [roleToAdd, setRoleToAdd] = useState('');
@@ -118,16 +132,15 @@ export default function Automod() {
   // (protege contre les anciennes configs a plat, incompatibles avec le nouveau schema imbrique).
   const normalize = (raw = {}) => ({
     enabled: raw.enabled ?? false,
-    bannedWords: { enabled: false, words: [], ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.bannedWords) ? raw.bannedWords : {}) },
-    invite: { enabled: false, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.invite) ? raw.invite : {}) },
-    link: { enabled: false, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.link) ? raw.link : {}) },
-    caps: { enabled: false, percent: 70, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.caps) ? raw.caps : {}) },
-    emojiSpam: { enabled: false, maxEmojis: 10, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.emojiSpam) ? raw.emojiSpam : {}) },
-    mentionSpam: { enabled: false, limit: 5, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.mentionSpam) ? raw.mentionSpam : {}) },
-    pingProtection: { enabled: false, protectedUserIds: [], protectedRoleIds: [], ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.pingProtection) ? raw.pingProtection : {}) },
-    spam: { enabled: true, threshold: 5, intervalMs: 5000, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.spam) ? raw.spam : {}) },
-    markdown: { enabled: false, ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.markdown) ? raw.markdown : {}) },
-    action: raw.action || 'delete'
+    bannedWords: { enabled: false, words: [], action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.bannedWords) ? raw.bannedWords : {}) },
+    invite: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.invite) ? raw.invite : {}) },
+    link: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.link) ? raw.link : {}) },
+    caps: { enabled: false, percent: 70, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.caps) ? raw.caps : {}) },
+    emojiSpam: { enabled: false, maxEmojis: 10, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.emojiSpam) ? raw.emojiSpam : {}) },
+    mentionSpam: { enabled: false, limit: 5, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.mentionSpam) ? raw.mentionSpam : {}) },
+    pingProtection: { enabled: false, protectedUserIds: [], protectedRoleIds: [], action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.pingProtection) ? raw.pingProtection : {}) },
+    spam: { enabled: true, threshold: 5, intervalMs: 5000, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.spam) ? raw.spam : {}) },
+    markdown: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.markdown) ? raw.markdown : {}) }
   });
 
   useEffect(() => {
@@ -183,6 +196,7 @@ export default function Automod() {
               </span>
             ))}
           </div>
+          <ActionSelect value={cfg.bannedWords.action} onChange={v => updateFeature('bannedWords', { action: v })} />
           <ExemptPicker channels={channels} roles={roles} value={cfg.bannedWords} onChange={p => updateFeature('bannedWords', p)} />
         </FeatureCard>
 
@@ -192,6 +206,7 @@ export default function Automod() {
           checked={cfg.invite.enabled}
           onToggle={v => updateFeature('invite', { enabled: v })}
         >
+          <ActionSelect value={cfg.invite.action} onChange={v => updateFeature('invite', { action: v })} />
           <ExemptPicker channels={channels} roles={roles} value={cfg.invite} onChange={p => updateFeature('invite', p)} />
         </FeatureCard>
 
@@ -201,6 +216,7 @@ export default function Automod() {
           checked={cfg.link.enabled}
           onToggle={v => updateFeature('link', { enabled: v })}
         >
+          <ActionSelect value={cfg.link.action} onChange={v => updateFeature('link', { action: v })} />
           <ExemptPicker channels={channels} roles={roles} value={cfg.link} onChange={p => updateFeature('link', p)} />
         </FeatureCard>
 
@@ -212,6 +228,7 @@ export default function Automod() {
         >
           <label className="label">Seuil ({cfg.caps.percent}% de majuscules)</label>
           <input type="range" min="10" max="100" className="w-full accent-signal-500" value={cfg.caps.percent} onChange={e => updateFeature('caps', { percent: Number(e.target.value) })} />
+          <ActionSelect value={cfg.caps.action} onChange={v => updateFeature('caps', { action: v })} />
           <ExemptPicker channels={channels} roles={roles} value={cfg.caps} onChange={p => updateFeature('caps', p)} />
         </FeatureCard>
 
@@ -223,6 +240,7 @@ export default function Automod() {
         >
           <label className="label">Nombre d'émojis max par message</label>
           <input type="number" min="1" max="50" className="input-field w-24" value={cfg.emojiSpam.maxEmojis} onChange={e => updateFeature('emojiSpam', { maxEmojis: Number(e.target.value) })} />
+          <ActionSelect value={cfg.emojiSpam.action} onChange={v => updateFeature('emojiSpam', { action: v })} />
           <ExemptPicker channels={channels} roles={roles} value={cfg.emojiSpam} onChange={p => updateFeature('emojiSpam', p)} />
         </FeatureCard>
 
@@ -234,6 +252,7 @@ export default function Automod() {
         >
           <label className="label">Nombre de mentions max par message</label>
           <input type="number" min="1" max="30" className="input-field w-24" value={cfg.mentionSpam.limit} onChange={e => updateFeature('mentionSpam', { limit: Number(e.target.value) })} />
+          <ActionSelect value={cfg.mentionSpam.action} onChange={v => updateFeature('mentionSpam', { action: v })} />
           <ExemptPicker channels={channels} roles={roles} value={cfg.mentionSpam} onChange={p => updateFeature('mentionSpam', p)} />
         </FeatureCard>
 
@@ -297,6 +316,7 @@ export default function Automod() {
               ))}
             </div>
           </div>
+          <ActionSelect value={cfg.pingProtection.action} onChange={v => updateFeature('pingProtection', { action: v })} />
           <ExemptPicker channels={channels} roles={roles} value={cfg.pingProtection} onChange={p => updateFeature('pingProtection', p)} />
         </FeatureCard>
 
@@ -316,6 +336,7 @@ export default function Automod() {
               <input type="number" className="input-field" value={cfg.spam.intervalMs} onChange={e => updateFeature('spam', { intervalMs: Number(e.target.value) })} />
             </div>
           </div>
+          <ActionSelect value={cfg.spam.action} onChange={v => updateFeature('spam', { action: v })} />
           <ExemptPicker channels={channels} roles={roles} value={cfg.spam} onChange={p => updateFeature('spam', p)} />
         </FeatureCard>
 
@@ -325,18 +346,9 @@ export default function Automod() {
           checked={cfg.markdown.enabled}
           onToggle={v => updateFeature('markdown', { enabled: v })}
         >
+          <ActionSelect value={cfg.markdown.action} onChange={v => updateFeature('markdown', { action: v })} />
           <ExemptPicker channels={channels} roles={roles} value={cfg.markdown} onChange={p => updateFeature('markdown', p)} />
         </FeatureCard>
-      </div>
-
-      <div className="card p-6 max-w-3xl">
-        <label className="label">Action en cas d'infraction (s'applique à toutes les fonctionnalités)</label>
-        <select className="input-field" value={cfg.action} onChange={e => updateGlobal({ action: e.target.value })}>
-          <option value="delete">Supprimer le message</option>
-          <option value="warn">Supprimer + avertir</option>
-          <option value="mute">Supprimer + mute 10 min</option>
-          <option value="kick">Supprimer + expulser</option>
-        </select>
       </div>
     </div>
   );

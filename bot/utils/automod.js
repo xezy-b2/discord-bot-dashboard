@@ -54,23 +54,23 @@ function checkMarkdownAbuse(content) {
 }
 
 /**
- * Analyse un message et retourne la raison de violation (ou null si RAS).
- * Chaque fonctionnalite est independamment activable, et possede ses propres
- * exemptions de salons/roles (verifiees via isExempt avant chaque test).
+ * Analyse un message et retourne { reason, action } de la premiere violation trouvee (ou null si RAS).
+ * Chaque fonctionnalite est independamment activable, possede ses propres exemptions de
+ * salons/roles, et sa propre action de sanction (delete/warn/mute/kick).
  */
 function analyzeMessage(message, cfg) {
   if (!cfg.enabled) return null;
   const content = message.content;
 
-  if (cfg.invite?.enabled && !isExempt(message, cfg.invite) && INVITE_REGEX.test(content)) return 'invite_link';
-  if (cfg.link?.enabled && !isExempt(message, cfg.link) && LINK_REGEX.test(content)) return 'external_link';
-  if (cfg.bannedWords?.enabled && !isExempt(message, cfg.bannedWords) && cfg.bannedWords.words?.some(w => content.toLowerCase().includes(w.toLowerCase()))) return 'banned_word';
-  if (cfg.caps?.enabled && !isExempt(message, cfg.caps) && checkCaps(content, cfg.caps.percent)) return 'excessive_caps';
-  if (cfg.emojiSpam?.enabled && !isExempt(message, cfg.emojiSpam) && checkEmojiSpam(content, cfg.emojiSpam.maxEmojis)) return 'emoji_spam';
-  if (cfg.mentionSpam?.enabled && !isExempt(message, cfg.mentionSpam) && message.mentions.users.size >= cfg.mentionSpam.limit) return 'mention_spam';
-  if (cfg.pingProtection?.enabled && !isExempt(message, cfg.pingProtection) && checkForbiddenMentions(message, cfg.pingProtection)) return 'forbidden_mention';
-  if (cfg.markdown?.enabled && !isExempt(message, cfg.markdown) && checkMarkdownAbuse(content)) return 'markdown_abuse';
-  if (cfg.spam?.enabled && !isExempt(message, cfg.spam) && checkSpam(message.guildId, message.author.id, cfg.spam)) return 'spam';
+  if (cfg.invite?.enabled && !isExempt(message, cfg.invite) && INVITE_REGEX.test(content)) return { reason: 'invite_link', action: cfg.invite.action };
+  if (cfg.link?.enabled && !isExempt(message, cfg.link) && LINK_REGEX.test(content)) return { reason: 'external_link', action: cfg.link.action };
+  if (cfg.bannedWords?.enabled && !isExempt(message, cfg.bannedWords) && cfg.bannedWords.words?.some(w => content.toLowerCase().includes(w.toLowerCase()))) return { reason: 'banned_word', action: cfg.bannedWords.action };
+  if (cfg.caps?.enabled && !isExempt(message, cfg.caps) && checkCaps(content, cfg.caps.percent)) return { reason: 'excessive_caps', action: cfg.caps.action };
+  if (cfg.emojiSpam?.enabled && !isExempt(message, cfg.emojiSpam) && checkEmojiSpam(content, cfg.emojiSpam.maxEmojis)) return { reason: 'emoji_spam', action: cfg.emojiSpam.action };
+  if (cfg.mentionSpam?.enabled && !isExempt(message, cfg.mentionSpam) && message.mentions.users.size >= cfg.mentionSpam.limit) return { reason: 'mention_spam', action: cfg.mentionSpam.action };
+  if (cfg.pingProtection?.enabled && !isExempt(message, cfg.pingProtection) && checkForbiddenMentions(message, cfg.pingProtection)) return { reason: 'forbidden_mention', action: cfg.pingProtection.action };
+  if (cfg.markdown?.enabled && !isExempt(message, cfg.markdown) && checkMarkdownAbuse(content)) return { reason: 'markdown_abuse', action: cfg.markdown.action };
+  if (cfg.spam?.enabled && !isExempt(message, cfg.spam) && checkSpam(message.guildId, message.author.id, cfg.spam)) return { reason: 'spam', action: cfg.spam.action };
 
   return null;
 }

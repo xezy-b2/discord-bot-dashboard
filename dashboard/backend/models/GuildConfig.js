@@ -55,15 +55,33 @@ const CardConfigSchema = new Schema({
 }, { _id: false });
 
 const AutomodSchema = new Schema({
-  enabled: { type: Boolean, default: false },
+  enabled: { type: Boolean, default: false }, // interrupteur general (coupe tout d'un coup)
+
+  antiBannedWords: { type: Boolean, default: false },
+  bannedWords: { type: [String], default: [] },
+
   antiInvite: { type: Boolean, default: false },
   antiLink: { type: Boolean, default: false },
+
+  antiCaps: { type: Boolean, default: false },
+  antiCapsPercent: { type: Number, default: 70, min: 10, max: 100 },
+
+  antiEmojiSpam: { type: Boolean, default: false },
+  maxEmojis: { type: Number, default: 10, min: 1, max: 50 },
+
+  antiMentionSpam: { type: Boolean, default: false },
+  mentionSpamLimit: { type: Number, default: 5, min: 1, max: 30 },
+
+  antiPingProtection: { type: Boolean, default: false }, // protege des membres/roles precis contre les pings
+  protectedUserIds: { type: [String], default: [] },
+  protectedRoleIds: { type: [String], default: [] },
+
   antiSpam: { type: Boolean, default: true },
   spamThreshold: { type: Number, default: 5 }, // messages
   spamIntervalMs: { type: Number, default: 5000 },
-  bannedWords: { type: [String], default: [] },
-  antiCapsPercent: { type: Number, default: 0 }, // 0 = desactive
-  mentionSpamLimit: { type: Number, default: 5 },
+
+  antiMarkdown: { type: Boolean, default: false }, // bloque spoilers/titres/blocs de code abusifs
+
   ignoredChannels: { type: [String], default: [] },
   ignoredRoles: { type: [String], default: [] },
   action: { type: String, enum: ['delete', 'warn', 'mute', 'kick'], default: 'delete' }

@@ -5,38 +5,64 @@ import Toggle from '../components/Toggle';
 import { useGuildMeta } from '../hooks/useGuildMeta';
 
 function ExemptPicker({ channels, roles, value, onChange }) {
-  const toggle = (key, id) => {
-    const list = value[key] || [];
-    onChange({ [key]: list.includes(id) ? list.filter(x => x !== id) : [...list, id] });
+  const [channelToAdd, setChannelToAdd] = useState('');
+  const [roleToAdd, setRoleToAdd] = useState('');
+
+  const addChannel = () => {
+    if (!channelToAdd || value.ignoredChannels?.includes(channelToAdd)) return;
+    onChange({ ignoredChannels: [...(value.ignoredChannels || []), channelToAdd] });
+    setChannelToAdd('');
   };
 
+  const addRole = () => {
+    if (!roleToAdd || value.ignoredRoles?.includes(roleToAdd)) return;
+    onChange({ ignoredRoles: [...(value.ignoredRoles || []), roleToAdd] });
+    setRoleToAdd('');
+  };
+
+  const removeChannel = (id) => onChange({ ignoredChannels: value.ignoredChannels.filter(x => x !== id) });
+  const removeRole = (id) => onChange({ ignoredRoles: value.ignoredRoles.filter(x => x !== id) });
+
   return (
-    <div className="space-y-3 pt-3 border-t border-white/5">
+    <div className="space-y-4 pt-3 border-t border-white/5">
       <div>
         <label className="label mb-2">Salons exemptés</label>
-        <div className="flex flex-wrap gap-1.5">
-          {channels.map(c => (
-            <button
-              key={c.id}
-              onClick={() => toggle('ignoredChannels', c.id)}
-              className={`text-[11px] px-2 py-1 rounded-md border transition ${value.ignoredChannels?.includes(c.id) ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
-            >
-              #{c.name}
-            </button>
+        <div className="flex gap-2">
+          <select className="input-field" value={channelToAdd} onChange={e => setChannelToAdd(e.target.value)}>
+            <option value="">— Choisir un salon —</option>
+            {channels.filter(c => !value.ignoredChannels?.includes(c.id)).map(c => (
+              <option key={c.id} value={c.id}>#{c.name}</option>
+            ))}
+          </select>
+          <button onClick={addChannel} className="btn-ghost text-sm shrink-0">Ajouter</button>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {value.ignoredChannels?.map(id => (
+            <span key={id} className="text-xs bg-white/5 px-2.5 py-1 rounded-lg flex items-center gap-2">
+              #{channels.find(c => c.id === id)?.name || id}
+              <button onClick={() => removeChannel(id)} className="text-white/40 hover:text-red-400">✕</button>
+            </span>
           ))}
         </div>
       </div>
+
       <div>
         <label className="label mb-2">Rôles exemptés</label>
-        <div className="flex flex-wrap gap-1.5">
-          {roles.map(r => (
-            <button
-              key={r.id}
-              onClick={() => toggle('ignoredRoles', r.id)}
-              className={`text-[11px] px-2 py-1 rounded-md border transition ${value.ignoredRoles?.includes(r.id) ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
-            >
-              {r.name}
-            </button>
+        <div className="flex gap-2">
+          <select className="input-field" value={roleToAdd} onChange={e => setRoleToAdd(e.target.value)}>
+            <option value="">— Choisir un rôle —</option>
+            {roles.filter(r => !value.ignoredRoles?.includes(r.id)).map(r => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
+          </select>
+          <button onClick={addRole} className="btn-ghost text-sm shrink-0">Ajouter</button>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {value.ignoredRoles?.map(id => (
+            <span key={id} className="text-xs bg-white/5 px-2.5 py-1 rounded-lg flex items-center gap-2">
+              {roles.find(r => r.id === id)?.name || id}
+              <button onClick={() => removeRole(id)} className="text-white/40 hover:text-red-400">✕</button>
+            </span>
           ))}
         </div>
       </div>
@@ -86,6 +112,7 @@ export default function Automod() {
   const [saving, setSaving] = useState(false);
   const [wordInput, setWordInput] = useState('');
   const [userIdInput, setUserIdInput] = useState('');
+  const [protectedRoleToAdd, setProtectedRoleToAdd] = useState('');
 
   // Reconstruit une forme garantie, quelle que soit la structure deja presente en base
   // (protege contre les anciennes configs a plat, incompatibles avec le nouveau schema imbrique).
@@ -218,23 +245,36 @@ export default function Automod() {
         >
           <div>
             <label className="label mb-2">Rôles protégés (interdits de mention)</label>
-            <div className="flex flex-wrap gap-1.5">
-              {roles.map(r => {
-                const active = cfg.pingProtection.protectedRoleIds.includes(r.id);
-                return (
+            <div className="flex gap-2">
+              <select className="input-field" value={protectedRoleToAdd} onChange={e => setProtectedRoleToAdd(e.target.value)}>
+                <option value="">— Choisir un rôle —</option>
+                {roles.filter(r => !cfg.pingProtection.protectedRoleIds.includes(r.id)).map(r => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+              <button
+                className="btn-ghost text-sm shrink-0"
+                onClick={() => {
+                  if (!protectedRoleToAdd) return;
+                  updateFeature('pingProtection', { protectedRoleIds: [...cfg.pingProtection.protectedRoleIds, protectedRoleToAdd] });
+                  setProtectedRoleToAdd('');
+                }}
+              >
+                Ajouter
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {cfg.pingProtection.protectedRoleIds.map(id => (
+                <span key={id} className="text-xs bg-white/5 px-2.5 py-1 rounded-lg flex items-center gap-2">
+                  {roles.find(r => r.id === id)?.name || id}
                   <button
-                    key={r.id}
-                    onClick={() => updateFeature('pingProtection', {
-                      protectedRoleIds: active
-                        ? cfg.pingProtection.protectedRoleIds.filter(id => id !== r.id)
-                        : [...cfg.pingProtection.protectedRoleIds, r.id]
-                    })}
-                    className={`text-[11px] px-2 py-1 rounded-md border transition ${active ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
+                    onClick={() => updateFeature('pingProtection', { protectedRoleIds: cfg.pingProtection.protectedRoleIds.filter(x => x !== id) })}
+                    className="text-white/40 hover:text-red-400"
                   >
-                    {r.name}
+                    ✕
                   </button>
-                );
-              })}
+                </span>
+              ))}
             </div>
           </div>
           <div>

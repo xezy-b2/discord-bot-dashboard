@@ -57,6 +57,8 @@ export default function WelcomeLeaveEditor({ type }) {
             <Toggle checked={cfg.enabled} onChange={v => update({ enabled: v })} label={`Activer le message de ${type === 'welcome' ? 'bienvenue' : 'départ'}`} />
           </div>
 
+          {cfg.enabled && (
+            <>
           <div className="card p-6 space-y-5">
             <div>
               <label className="label">Salon d'envoi</label>
@@ -292,9 +294,11 @@ export default function WelcomeLeaveEditor({ type }) {
               )}
             </div>
           )}
+            </>
+          )}
         </div>
 
-        <LivePreview guildId={guildId} type={type} cfg={cfg} />
+        {cfg.enabled && <LivePreview guildId={guildId} type={type} cfg={cfg} />}
       </div>
     </div>
   );

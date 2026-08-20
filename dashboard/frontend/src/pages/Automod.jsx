@@ -173,6 +173,7 @@ export default function Automod() {
         <Toggle checked={cfg.enabled} onChange={v => updateGlobal({ enabled: v })} label="Activer l'auto-modération (interrupteur général)" />
       </div>
 
+      {cfg.enabled && (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mb-6">
         <FeatureCard
           title="Vocabulaire interdit"
@@ -351,6 +352,7 @@ export default function Automod() {
           <ExemptPicker channels={channels} roles={roles} value={cfg.markdown} onChange={p => updateFeature('markdown', p)} />
         </FeatureCard>
       </div>
+      )}
     </div>
   );
 }

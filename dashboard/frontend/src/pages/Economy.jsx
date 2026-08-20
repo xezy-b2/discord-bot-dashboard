@@ -37,6 +37,7 @@ export default function Economy() {
           <Toggle checked={cfg.enabled} onChange={v => update({ enabled: v })} label="Activer l'économie" />
         </div>
 
+        {cfg.enabled && (
         <div className="card p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -65,6 +66,7 @@ export default function Economy() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

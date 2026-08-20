@@ -65,6 +65,8 @@ export default function Leveling() {
             <Toggle checked={cfg.enabled} onChange={v => update({ enabled: v })} label="Activer le système de niveaux" />
           </div>
 
+          {cfg.enabled && (
+          <>
           <div className="card p-6 space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div>
@@ -109,6 +111,8 @@ export default function Leveling() {
               ))}
             </div>
           </div>
+          </>
+          )}
         </div>
 
         <div className="card p-5">
@@ -130,6 +134,8 @@ export default function Leveling() {
       </div>
 
       {/* --- Carte de passage de niveau --- */}
+      {cfg.enabled && (
+      <>
       <div className="mb-3">
         <h2 className="font-display text-lg font-bold">🎉 Message de niveau</h2>
         <p className="text-white/40 text-sm">Choisis un simple texte, une carte générée personnalisable, ou les deux.</p>
@@ -202,6 +208,8 @@ export default function Leveling() {
           <CardPreview guildId={guildId} type="levelup" cfg={cfg.levelUpCard} note="Valeurs d'exemple : niveau 7, rang #1, 120/400 XP." />
         )}
       </div>
+      </>
+      )}
 
       {/* --- Carte /rank --- */}
       <div className="mb-3">

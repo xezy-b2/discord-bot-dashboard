@@ -68,6 +68,8 @@ export default function Tickets() {
             <Toggle checked={cfg.enabled} onChange={v => update({ enabled: v })} label="Activer le système de tickets" />
           </div>
 
+          {cfg.enabled && (
+          <>
           <div className="card p-6 space-y-4">
             <div>
               <label className="label">Catégorie des tickets</label>
@@ -125,6 +127,8 @@ export default function Tickets() {
             </button>
             {cfg.panelMessageId && <p className="text-[11px] text-white/30">✓ Panneau actif dans #{channels.find(c => c.id === cfg.panelChannelId)?.name}</p>}
           </div>
+          </>
+          )}
         </div>
 
         <div className="card p-5">

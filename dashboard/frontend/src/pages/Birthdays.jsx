@@ -51,6 +51,7 @@ export default function Birthdays() {
             <Toggle checked={cfg.enabled} onChange={v => update({ enabled: v })} label="Activer les annonces d'anniversaire" />
           </div>
 
+          {cfg.enabled && (
           <div className="card p-6 space-y-4">
             <div>
               <label className="label">Salon d'annonce</label>
@@ -73,6 +74,7 @@ export default function Birthdays() {
               </select>
             </div>
           </div>
+          )}
         </div>
 
         <div className="card p-5">

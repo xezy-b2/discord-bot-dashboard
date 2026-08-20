@@ -51,6 +51,8 @@ export default function Logs() {
           <Toggle checked={cfg.enabled} onChange={v => update({ enabled: v })} label="Activer les logs" />
         </div>
 
+        {cfg.enabled && (
+        <>
         <div className="card p-6">
           <label className="label">Salon de logs</label>
           <select className="input-field" value={cfg.channelId || ''} onChange={e => update({ channelId: e.target.value })}>
@@ -65,6 +67,8 @@ export default function Logs() {
             <Toggle key={key} checked={cfg.events[key]} onChange={v => updateEvent(key, v)} label={label} />
           ))}
         </div>
+        </>
+        )}
       </div>
     </div>
   );

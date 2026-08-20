@@ -53,6 +53,7 @@ export default function AutoRoles() {
           <Toggle checked={cfg.enabled} onChange={v => update({ enabled: v })} label="Activer l'attribution automatique de rôles" />
         </div>
 
+        {cfg.enabled && (
         <div className="card p-6">
           <label className="label mb-3">Rôles attribués à chaque nouvel arrivant</label>
           <div className="flex flex-wrap gap-2">
@@ -71,6 +72,7 @@ export default function AutoRoles() {
             ⚠️ Le rôle du bot doit être positionné au-dessus des rôles sélectionnés dans la hiérarchie du serveur, sinon l'attribution échouera silencieusement.
           </p>
         </div>
+        )}
       </div>
     </div>
   );

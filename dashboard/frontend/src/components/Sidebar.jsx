@@ -23,18 +23,18 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 shrink-0 border-r border-white/5 h-screen sticky top-0 flex flex-col py-6 px-3">
-      <a href="/dashboard" className="flex items-center gap-2 px-3 mb-8">
+      <a href="/dashboard" className="flex items-center gap-2 px-3 mb-8 shrink-0">
         <span className="text-xl">🛰️</span>
         <span className="font-display font-bold text-white/90">Panneau</span>
       </a>
 
-      <nav className="flex flex-col gap-1">
+      <nav className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-1">
         {links.map(l => (
           <NavLink
             key={l.to}
             to={`/dashboard/${guildId}/${l.to}`}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition shrink-0 ${
                 isActive ? 'bg-signal-500/15 text-signal-400 border border-signal-500/20' : 'text-white/50 hover:bg-white/5 hover:text-white/80'
               }`
             }
@@ -45,7 +45,7 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="mt-auto px-3">
+      <div className="px-3 pt-4 shrink-0 border-t border-white/5 mt-2">
         <a href="/dashboard" className="text-xs text-white/30 hover:text-white/60 transition">← Changer de serveur</a>
       </div>
     </aside>

@@ -20,6 +20,16 @@ const socialNotificationsRoutes = require('./routes/socialNotifications');
 
 const app = express();
 
+// Filet de securite global : une erreur non geree quelque part dans une route ne doit JAMAIS
+// faire crasher tout le serveur (et donc renvoyer un 502 a tous les utilisateurs). On logge
+// l'erreur pour pouvoir la corriger, mais le process continue de tourner normalement.
+process.on('unhandledRejection', (err) => {
+  console.error('[UNHANDLED REJECTION]', err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err);
+});
+
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -53,6 +63,14 @@ if (fs.existsSync(frontendDist)) {
   });
   console.log('[SERVER] Frontend détecté et servi depuis /dashboard/frontend/dist');
 }
+
+// Middleware d'erreur Express (doit rester en tout dernier) : capture toute erreur passee
+// via next(err) et renvoie une reponse JSON propre plutot que de laisser planter la requete.
+app.use((err, req, res, next) => {
+  console.error('[EXPRESS ERROR]', err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'Une erreur interne est survenue.' });
+});
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {

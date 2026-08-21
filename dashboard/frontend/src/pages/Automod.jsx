@@ -132,18 +132,31 @@ export default function Automod() {
 
   // Reconstruit une forme garantie, quelle que soit la structure deja presente en base
   // (protege contre les anciennes configs a plat, incompatibles avec le nouveau schema imbrique).
-  const normalize = (raw = {}) => ({
-    enabled: raw.enabled ?? false,
-    bannedWords: { enabled: false, words: [], action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.bannedWords) ? raw.bannedWords : {}) },
-    invite: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.invite) ? raw.invite : {}) },
-    link: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.link) ? raw.link : {}) },
-    caps: { enabled: false, percent: 70, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.caps) ? raw.caps : {}) },
-    emojiSpam: { enabled: false, maxEmojis: 10, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.emojiSpam) ? raw.emojiSpam : {}) },
-    mentionSpam: { enabled: false, limit: 5, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.mentionSpam) ? raw.mentionSpam : {}) },
-    pingProtection: { enabled: false, protectedUserIds: [], protectedRoleIds: [], action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.pingProtection) ? raw.pingProtection : {}) },
-    spam: { enabled: true, threshold: 5, intervalMs: 5000, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.spam) ? raw.spam : {}) },
-    markdown: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.markdown) ? raw.markdown : {}) }
-  });
+  const VALID_ACTIONS = ['delete', 'warn', 'mute', 'kick'];
+  const safeAction = (val) => VALID_ACTIONS.includes(val) ? val : 'delete';
+
+  const normalize = (raw = {}) => {
+    const cfg = {
+      enabled: raw.enabled ?? false,
+      bannedWords: { enabled: false, words: [], action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.bannedWords) ? raw.bannedWords : {}) },
+      invite: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.invite) ? raw.invite : {}) },
+      link: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.link) ? raw.link : {}) },
+      caps: { enabled: false, percent: 70, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.caps) ? raw.caps : {}) },
+      emojiSpam: { enabled: false, maxEmojis: 10, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.emojiSpam) ? raw.emojiSpam : {}) },
+      mentionSpam: { enabled: false, limit: 5, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.mentionSpam) ? raw.mentionSpam : {}) },
+      pingProtection: { enabled: false, protectedUserIds: [], protectedRoleIds: [], action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.pingProtection) ? raw.pingProtection : {}) },
+      spam: { enabled: true, threshold: 5, intervalMs: 5000, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.spam) ? raw.spam : {}) },
+      markdown: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.markdown) ? raw.markdown : {}) }
+    };
+
+    // Ecrase toute valeur d'action corrompue (ex: [] issue d'une ancienne structure de schema)
+    // par une valeur valide, APRES le spread, pour ne jamais renvoyer une valeur invalide au serveur.
+    for (const key of ['bannedWords', 'invite', 'link', 'caps', 'emojiSpam', 'mentionSpam', 'pingProtection', 'spam', 'markdown']) {
+      cfg[key].action = safeAction(cfg[key].action);
+    }
+
+    return cfg;
+  };
 
   useEffect(() => {
     api.get(`/config/${guildId}`).then(res => setCfg(normalize(res.data.automod)));

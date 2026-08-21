@@ -25,12 +25,17 @@ router.patch('/:guildId/:section', requireAuth, requireGuildAccess, async (req, 
     return res.status(400).json({ error: 'Section invalide' });
   }
 
-  const config = await getOrCreateConfig(req.params.guildId);
-  config[section] = { ...config[section].toObject(), ...req.body };
-  config.markModified(section);
-  await config.save();
+  try {
+    const config = await getOrCreateConfig(req.params.guildId);
+    config[section] = { ...config[section].toObject(), ...req.body };
+    config.markModified(section);
+    await config.save();
 
-  res.json(config);
+    res.json(config);
+  } catch (err) {
+    console.error(`[CONFIG] Erreur sauvegarde section "${section}" :`, err.message);
+    res.status(400).json({ error: 'Configuration invalide : ' + err.message });
+  }
 });
 
 // Champs racine simples (prefix, moderatorRoleIds, muteRoleId)

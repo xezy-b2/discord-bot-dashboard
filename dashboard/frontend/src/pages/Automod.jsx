@@ -4,6 +4,8 @@ import api from '../api/client';
 import Toggle from '../components/Toggle';
 import { useGuildMeta } from '../hooks/useGuildMeta';
 import Modal from '../components/Modal';
+import { useAutoSave } from '../hooks/useAutoSave';
+import SaveStatus from '../components/SaveStatus';
 
 function ActionSelect({ value, onChange }) {
   return (
@@ -124,7 +126,6 @@ export default function Automod() {
   const { guildId } = useParams();
   const { channels, roles } = useGuildMeta(guildId);
   const [cfg, setCfg] = useState(null);
-  const [saving, setSaving] = useState(false);
   const [wordInput, setWordInput] = useState('');
   const [userIdInput, setUserIdInput] = useState('');
   const [protectedRoleToAdd, setProtectedRoleToAdd] = useState('');
@@ -152,10 +153,10 @@ export default function Automod() {
   const updateFeature = (key, patch) => setCfg(prev => ({ ...prev, [key]: { ...prev[key], ...patch } }));
 
   const save = async () => {
-    setSaving(true);
     await api.patch(`/config/${guildId}/automod`, cfg);
-    setSaving(false);
   };
+
+  const autoSaveStatus = useAutoSave(cfg, save);
 
   if (!cfg) return <p className="text-white/40">Chargement...</p>;
 
@@ -166,7 +167,7 @@ export default function Automod() {
           <h1 className="font-display text-2xl font-bold">🛡️ Auto-modération</h1>
           <p className="text-white/40 text-sm mt-1">Chaque fonctionnalité a ses propres réglages et ses propres exemptions de salons/rôles.</p>
         </div>
-        <button onClick={save} disabled={saving} className="btn-primary text-sm">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
+        <SaveStatus status={autoSaveStatus} />
       </div>
 
       <div className="card p-6 mb-6 max-w-3xl">

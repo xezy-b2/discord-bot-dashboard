@@ -3,22 +3,19 @@ import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import { useGuildMeta } from '../hooks/useGuildMeta';
 import Toggle from '../components/Toggle';
+import { useAutoSave } from '../hooks/useAutoSave';
+import SaveStatus from '../components/SaveStatus';
 
 export default function AutoRoles() {
   const { guildId } = useParams();
   const { roles } = useGuildMeta(guildId);
   const [cfg, setCfg] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     api.get(`/config/${guildId}`).then(res => setCfg(res.data.autoRoles));
   }, [guildId]);
 
-  const update = (patch) => {
-    setCfg(prev => ({ ...prev, ...patch }));
-    setSaved(false);
-  };
+  const update = (patch) => setCfg(prev => ({ ...prev, ...patch }));
 
   const toggleRole = (roleId) => {
     const current = cfg.roleIds || [];
@@ -26,12 +23,10 @@ export default function AutoRoles() {
   };
 
   const save = async () => {
-    setSaving(true);
     await api.patch(`/config/${guildId}/autoRoles`, cfg);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   };
+
+  const autoSaveStatus = useAutoSave(cfg, save);
 
   if (!cfg) return <p className="text-white/40">Chargement...</p>;
 
@@ -42,10 +37,7 @@ export default function AutoRoles() {
           <h1 className="font-display text-2xl font-bold">🏷️ Rôles automatiques</h1>
           <p className="text-white/40 text-sm mt-1">Rôles à l'arrivée — définis quels rôles doivent être attribués aux nouveaux membres.</p>
         </div>
-        <div className="flex items-center gap-3">
-          {saved && <span className="text-xs text-green-400">✓ Sauvegardé</span>}
-          <button onClick={save} disabled={saving} className="btn-primary text-sm">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
-        </div>
+        <SaveStatus status={autoSaveStatus} />
       </div>
 
       <div className="space-y-6 max-w-xl">

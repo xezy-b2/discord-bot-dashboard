@@ -4,6 +4,8 @@ import api from '../api/client';
 import { useGuildMeta } from '../hooks/useGuildMeta';
 import Toggle from '../components/Toggle';
 import CardPreview from '../components/CardPreview';
+import { useAutoSave } from '../hooks/useAutoSave';
+import SaveStatus from '../components/SaveStatus';
 
 function ColorField({ label, value, onChange }) {
   return (
@@ -22,8 +24,9 @@ export default function Leveling() {
   const { channels, roles } = useGuildMeta(guildId);
   const [cfg, setCfg] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
-  const [saving, setSaving] = useState(false);
   const [newReward, setNewReward] = useState({ level: '', roleId: '' });
+  const [testing, setTesting] = useState(false);
+  const [testMsg, setTestMsg] = useState('');
 
   useEffect(() => {
     api.get(`/config/${guildId}`).then(res => setCfg(res.data.leveling));
@@ -35,9 +38,28 @@ export default function Leveling() {
   const updateRankCard = (patch) => setCfg(prev => ({ ...prev, rankCard: { ...prev.rankCard, ...patch } }));
 
   const save = async () => {
-    setSaving(true);
     await api.patch(`/config/${guildId}/leveling`, cfg);
-    setSaving(false);
+  };
+
+  const autoSaveStatus = useAutoSave(cfg, save);
+
+  const sendLevelUpTest = async () => {
+    setTesting(true);
+    setTestMsg('');
+    try {
+      await api.post(`/preview/${guildId}/levelup/send`, {
+        channelId: cfg.levelUpChannelId,
+        message: cfg.levelUpMessage,
+        mode: cfg.levelUpMode,
+        card: cfg.levelUpCard
+      });
+      setTestMsg('✓ Test envoyé !');
+    } catch (err) {
+      setTestMsg(err.response?.data?.error || 'Erreur lors du test');
+    } finally {
+      setTesting(false);
+      setTimeout(() => setTestMsg(''), 4000);
+    }
   };
 
   const addReward = () => {
@@ -55,7 +77,7 @@ export default function Leveling() {
           <h1 className="font-display text-2xl font-bold">📈 Niveaux & XP</h1>
           <p className="text-white/40 text-sm mt-1">Configure la progression, les récompenses, et personnalise les cartes.</p>
         </div>
-        <button onClick={save} disabled={saving} className="btn-primary text-sm">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
+        <SaveStatus status={autoSaveStatus} />
       </div>
 
       {/* --- Réglages généraux --- */}
@@ -136,9 +158,17 @@ export default function Leveling() {
       {/* --- Carte de passage de niveau --- */}
       {cfg.enabled && (
       <>
-      <div className="mb-3">
-        <h2 className="font-display text-lg font-bold">🎉 Message de niveau</h2>
-        <p className="text-white/40 text-sm">Choisis un simple texte, une carte générée personnalisable, ou les deux.</p>
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h2 className="font-display text-lg font-bold">🎉 Message de niveau</h2>
+          <p className="text-white/40 text-sm">Choisis un simple texte, une carte générée personnalisable, ou les deux.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {testMsg && <span className="text-xs text-white/50">{testMsg}</span>}
+          <button onClick={sendLevelUpTest} disabled={testing} className="btn-ghost text-sm shrink-0">
+            {testing ? 'Envoi...' : '🧪 Tester'}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 mb-10">

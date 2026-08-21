@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import { useGuildMeta } from '../hooks/useGuildMeta';
 import Toggle from '../components/Toggle';
+import { useAutoSave } from '../hooks/useAutoSave';
+import SaveStatus from '../components/SaveStatus';
 
 const MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
@@ -11,7 +13,8 @@ export default function Birthdays() {
   const { channels, roles } = useGuildMeta(guildId);
   const [cfg, setCfg] = useState(null);
   const [list, setList] = useState([]);
-  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testMsg, setTestMsg] = useState('');
 
   useEffect(() => {
     api.get(`/birthdays/${guildId}/config`).then(res => setCfg(res.data));
@@ -21,9 +24,23 @@ export default function Birthdays() {
   const update = (patch) => setCfg(prev => ({ ...prev, ...patch }));
 
   const save = async () => {
-    setSaving(true);
     await api.patch(`/birthdays/${guildId}/config`, cfg);
-    setSaving(false);
+  };
+
+  const autoSaveStatus = useAutoSave(cfg, save);
+
+  const sendTest = async () => {
+    setTesting(true);
+    setTestMsg('');
+    try {
+      await api.post(`/birthdays/${guildId}/send-test`, { channelId: cfg.channelId, message: cfg.message });
+      setTestMsg('✓ Test envoyé !');
+    } catch (err) {
+      setTestMsg(err.response?.data?.error || 'Erreur lors du test');
+    } finally {
+      setTesting(false);
+      setTimeout(() => setTestMsg(''), 4000);
+    }
   };
 
   const remove = async (userId) => {
@@ -42,7 +59,15 @@ export default function Birthdays() {
             Les membres enregistrent leur date avec <code className="text-signal-400">/anniversaire definir</code>, la consultent avec <code className="text-signal-400">/anniversaire liste</code>, et la retirent avec <code className="text-signal-400">/anniversaire retirer</code>.
           </p>
         </div>
-        <button onClick={save} disabled={saving} className="btn-primary text-sm">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
+        <div className="flex items-center gap-3">
+          {testMsg && <span className="text-xs text-white/50">{testMsg}</span>}
+          {cfg.enabled && (
+            <button onClick={sendTest} disabled={testing || !cfg.channelId} className="btn-ghost text-sm">
+              {testing ? 'Envoi...' : '🧪 Tester'}
+            </button>
+          )}
+          <SaveStatus status={autoSaveStatus} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 max-w-4xl">

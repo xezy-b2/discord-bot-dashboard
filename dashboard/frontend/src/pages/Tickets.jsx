@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import { useGuildMeta } from '../hooks/useGuildMeta';
 import Toggle from '../components/Toggle';
+import { useAutoSave } from '../hooks/useAutoSave';
+import SaveStatus from '../components/SaveStatus';
 
 export default function Tickets() {
   const { guildId } = useParams();
@@ -10,7 +12,6 @@ export default function Tickets() {
   const [categories, setCategories] = useState([]);
   const [cfg, setCfg] = useState(null);
   const [tickets, setTickets] = useState([]);
-  const [saving, setSaving] = useState(false);
   const [panelForm, setPanelForm] = useState({ channelId: '', title: '🎫 Support', description: 'Clique sur le bouton ci-dessous pour ouvrir un ticket.', buttonLabel: 'Créer un ticket' });
   const [creatingPanel, setCreatingPanel] = useState(false);
   const [error, setError] = useState('');
@@ -24,10 +25,10 @@ export default function Tickets() {
   const update = (patch) => setCfg(prev => ({ ...prev, ...patch }));
 
   const save = async () => {
-    setSaving(true);
     await api.patch(`/tickets/${guildId}/config`, cfg);
-    setSaving(false);
   };
+
+  const autoSaveStatus = useAutoSave(cfg, save);
 
   const createPanel = async () => {
     if (!panelForm.channelId) return;
@@ -57,7 +58,7 @@ export default function Tickets() {
           <h1 className="font-display text-2xl font-bold">🎫 Tickets</h1>
           <p className="text-white/40 text-sm mt-1">Support par ticket avec transcription HTML automatique à la fermeture.</p>
         </div>
-        <button onClick={save} disabled={saving} className="btn-primary text-sm">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
+        <SaveStatus status={autoSaveStatus} />
       </div>
 
       {error && <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-xl px-4 py-3 mb-6">{error}</div>}

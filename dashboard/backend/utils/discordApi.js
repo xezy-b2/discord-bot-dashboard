@@ -60,8 +60,17 @@ async function getUsers(userIds) {
   return map;
 }
 
-/** Envoie un message dans un salon (utilisé pour créer les messages de reaction roles) */
-async function sendMessage(channelId, payload) {
+/** Envoie un message dans un salon (utilisé pour créer les messages de reaction roles),
+ *  avec un fichier joint optionnel (ex: la carte generee en PNG) */
+async function sendMessage(channelId, payload, file) {
+  if (file) {
+    const form = new FormData();
+    form.append('payload_json', JSON.stringify(payload));
+    form.append('files[0]', new Blob([file.buffer], { type: 'image/png' }), file.name);
+    const { data } = await botApi.post(`/channels/${channelId}/messages`, form);
+    return data;
+  }
+
   const { data } = await botApi.post(`/channels/${channelId}/messages`, payload);
   return data;
 }

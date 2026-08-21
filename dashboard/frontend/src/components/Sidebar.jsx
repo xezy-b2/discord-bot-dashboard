@@ -1,6 +1,7 @@
 import { NavLink, useParams } from 'react-router-dom';
 
 const links = [
+  { to: '', label: 'Vue d\'ensemble', icon: '🏠' },
   { to: 'welcome', label: 'Bienvenue', icon: '👋' },
   { to: 'leave', label: 'Départ', icon: '🚪' },
   { to: 'auto-roles', label: 'Rôles automatiques', icon: '🏷️' },
@@ -32,7 +33,8 @@ export default function Sidebar() {
         {links.map(l => (
           <NavLink
             key={l.to}
-            to={`/dashboard/${guildId}/${l.to}`}
+            to={l.to ? `/dashboard/${guildId}/${l.to}` : `/dashboard/${guildId}`}
+            end={!l.to}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition shrink-0 ${
                 isActive ? 'bg-signal-500/15 text-signal-400 border border-signal-500/20' : 'text-white/50 hover:bg-white/5 hover:text-white/80'

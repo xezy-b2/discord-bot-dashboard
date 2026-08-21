@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import { useGuildMeta } from '../hooks/useGuildMeta';
+import { useAutoSave } from '../hooks/useAutoSave';
 import LivePreview from './LivePreview';
 import Toggle from './Toggle';
+import SaveStatus from './SaveStatus';
 
 const VARIABLES = ['{user}', '{username}', '{tag}', '{server}', '{memberCount}'];
 
@@ -11,24 +13,33 @@ export default function WelcomeLeaveEditor({ type }) {
   const { guildId } = useParams();
   const { channels, roles } = useGuildMeta(guildId);
   const [cfg, setCfg] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testMsg, setTestMsg] = useState('');
 
   useEffect(() => {
     api.get(`/config/${guildId}`).then(res => setCfg(res.data[type]));
   }, [guildId, type]);
 
-  const update = (patch) => {
-    setCfg(prev => ({ ...prev, ...patch }));
-    setSaved(false);
-  };
+  const update = (patch) => setCfg(prev => ({ ...prev, ...patch }));
 
   const save = async () => {
-    setSaving(true);
     await api.patch(`/config/${guildId}/${type}`, cfg);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const autoSaveStatus = useAutoSave(cfg, save);
+
+  const sendTest = async () => {
+    setTesting(true);
+    setTestMsg('');
+    try {
+      await api.post(`/preview/${guildId}/${type}/send`, cfg);
+      setTestMsg('✓ Test envoyé !');
+    } catch (err) {
+      setTestMsg(err.response?.data?.error || 'Erreur lors du test');
+    } finally {
+      setTesting(false);
+      setTimeout(() => setTestMsg(''), 4000);
+    }
   };
 
   if (!cfg) return <p className="text-white/40">Chargement...</p>;
@@ -44,10 +55,11 @@ export default function WelcomeLeaveEditor({ type }) {
           <p className="text-white/40 text-sm mt-1">Personnalise l'apparence et le texte, l'aperçu se met à jour en direct.</p>
         </div>
         <div className="flex items-center gap-3">
-          {saved && <span className="text-xs text-green-400">✓ Sauvegardé</span>}
-          <button onClick={save} disabled={saving} className="btn-primary text-sm">
-            {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+          {testMsg && <span className="text-xs text-white/50">{testMsg}</span>}
+          <button onClick={sendTest} disabled={testing || !cfg.channelId} className="btn-ghost text-sm">
+            {testing ? 'Envoi...' : '🧪 Tester'}
           </button>
+          <SaveStatus status={autoSaveStatus} />
         </div>
       </div>
 

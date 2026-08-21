@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import Toggle from '../components/Toggle';
+import { useAutoSave } from '../hooks/useAutoSave';
+import SaveStatus from '../components/SaveStatus';
 
 export default function Economy() {
   const { guildId } = useParams();
   const [cfg, setCfg] = useState(null);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api.get(`/config/${guildId}`).then(res => setCfg(res.data.economy));
@@ -15,10 +16,10 @@ export default function Economy() {
   const update = (patch) => setCfg(prev => ({ ...prev, ...patch }));
 
   const save = async () => {
-    setSaving(true);
     await api.patch(`/config/${guildId}/economy`, cfg);
-    setSaving(false);
   };
+
+  const autoSaveStatus = useAutoSave(cfg, save);
 
   if (!cfg) return <p className="text-white/40">Chargement...</p>;
 
@@ -29,7 +30,7 @@ export default function Economy() {
           <h1 className="font-display text-2xl font-bold">🪙 Économie</h1>
           <p className="text-white/40 text-sm mt-1">Monnaie virtuelle du serveur.</p>
         </div>
-        <button onClick={save} disabled={saving} className="btn-primary text-sm">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
+        <SaveStatus status={autoSaveStatus} />
       </div>
 
       <div className="space-y-6 max-w-xl">

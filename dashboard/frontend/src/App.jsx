@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import GuildSelect from './pages/GuildSelect';
 import DashboardLayout from './pages/DashboardLayout';
+import GuildHome from './pages/GuildHome';
 import Welcome from './pages/Welcome';
 import Leave from './pages/Leave';
 import AutoRoles from './pages/AutoRoles';
@@ -31,7 +32,7 @@ export default function App() {
         <Route path="/dashboard" element={<ProtectedRoute><GuildSelect /></ProtectedRoute>} />
 
         <Route path="/dashboard/:guildId" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-          <Route index element={<Navigate to="welcome" replace />} />
+          <Route index element={<GuildHome />} />
           <Route path="welcome" element={<Welcome />} />
           <Route path="leave" element={<Leave />} />
           <Route path="auto-roles" element={<AutoRoles />} />

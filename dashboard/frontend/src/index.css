@@ -37,3 +37,35 @@ body {
 .label {
   @apply text-[11px] uppercase tracking-wider text-white/40 font-semibold mb-1.5 block;
 }
+
+/* Curseur a double poignee (plage horaire des messages recurrents) : deux <input type="range">
+   superposes, dont seule la poignee (thumb) est visible/cliquable, la piste etant transparente. */
+.range-thumb-only {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+.range-thumb-only::-webkit-slider-runnable-track { background: transparent; }
+.range-thumb-only::-moz-range-track { background: transparent; }
+.range-thumb-only::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0 2px #6f5cff;
+  cursor: pointer;
+  margin-top: 0;
+}
+.range-thumb-only::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0 2px #6f5cff;
+  cursor: pointer;
+  border: none;
+}

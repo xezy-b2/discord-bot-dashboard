@@ -9,29 +9,55 @@ router.get('/:guildId', requireAuth, requireGuildAccess, async (req, res) => {
 });
 
 router.post('/:guildId', requireAuth, requireGuildAccess, async (req, res) => {
-  const { channelId, content, intervalMinutes } = req.body;
-  if (!channelId || !content || !intervalMinutes) {
-    return res.status(400).json({ error: 'channelId, content et intervalMinutes requis' });
+  const {
+    name, channelId, content, mode,
+    intervalMinutes, targetHour, targetMinute,
+    sendHourStart, sendHourEnd, daysOfWeek
+  } = req.body;
+
+  if (!channelId || !content) {
+    return res.status(400).json({ error: 'channelId et content requis' });
   }
-  if (intervalMinutes < 5) return res.status(400).json({ error: 'Intervalle minimum : 5 minutes' });
+  if (mode === 'interval' && (!intervalMinutes || intervalMinutes < 5)) {
+    return res.status(400).json({ error: 'Intervalle minimum : 5 minutes' });
+  }
 
   const doc = await RecurringMessage.create({
     guildId: req.params.guildId,
+    name: name || '',
     channelId,
     content,
-    intervalMinutes,
-    nextSendAt: new Date(Date.now() + intervalMinutes * 60_000)
+    mode: mode || 'interval',
+    intervalMinutes: intervalMinutes || 60,
+    targetHour: targetHour ?? 9,
+    targetMinute: targetMinute ?? 0,
+    sendHourStart: sendHourStart ?? 0,
+    sendHourEnd: sendHourEnd ?? 24,
+    daysOfWeek: daysOfWeek?.length ? daysOfWeek : [0, 1, 2, 3, 4, 5, 6],
+    nextSendAt: new Date(Date.now() + (intervalMinutes || 60) * 60_000)
   });
 
   res.json(doc);
 });
 
 router.patch('/:guildId/:id', requireAuth, requireGuildAccess, async (req, res) => {
-  const { enabled, content, intervalMinutes, channelId } = req.body;
+  const {
+    enabled, name, content, channelId, mode,
+    intervalMinutes, targetHour, targetMinute,
+    sendHourStart, sendHourEnd, daysOfWeek
+  } = req.body;
+
   const update = {};
   if (enabled !== undefined) update.enabled = enabled;
+  if (name !== undefined) update.name = name;
   if (content !== undefined) update.content = content;
   if (channelId !== undefined) update.channelId = channelId;
+  if (mode !== undefined) update.mode = mode;
+  if (targetHour !== undefined) update.targetHour = targetHour;
+  if (targetMinute !== undefined) update.targetMinute = targetMinute;
+  if (sendHourStart !== undefined) update.sendHourStart = sendHourStart;
+  if (sendHourEnd !== undefined) update.sendHourEnd = sendHourEnd;
+  if (daysOfWeek !== undefined) update.daysOfWeek = daysOfWeek;
   if (intervalMinutes !== undefined) {
     update.intervalMinutes = intervalMinutes;
     update.nextSendAt = new Date(Date.now() + intervalMinutes * 60_000);

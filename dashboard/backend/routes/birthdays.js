@@ -36,16 +36,84 @@ router.delete('/:guildId/:userId', requireAuth, requireGuildAccess, async (req, 
   res.json({ success: true });
 });
 
+/** Calcule l'age exact a partir d'une date de naissance (tient compte du mois/jour, pas juste l'annee) */
+function calculateAge(birthYear, birthMonth, birthDay) {
+  const now = new Date();
+  let age = now.getFullYear() - birthYear;
+  const hasHadBirthdayThisYear = (now.getMonth() + 1 > birthMonth) || (now.getMonth() + 1 === birthMonth && now.getDate() >= birthDay);
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
+
+/**
+ * POST /api/birthdays/:guildId/preview
+ * Genere un apercu (texte ou embed) avec le pseudo/avatar reel de l'utilisateur connecte
+ * et son age reel s'il a enregistre sa date de naissance, sinon un age d'exemple.
+ */
+router.post('/:guildId/preview', requireAuth, requireGuildAccess, async (req, res) => {
+  const cfg = req.body;
+
+  const realBirthday = await Birthday.findOne({ guildId: req.params.guildId, userId: req.user.id });
+  const age = realBirthday?.year ? calculateAge(realBirthday.year, realBirthday.month, realBirthday.day) : 25;
+
+  const avatarUrl = req.user.avatar
+    ? `https://cdn.discordapp.com/avatars/${req.user.id}/${req.user.avatar}.png?size=256`
+    : `https://cdn.discordapp.com/embed/avatars/${Number(req.user.id.slice(-1)) % 5}.png`;
+
+  const text = (cfg.message || '')
+    .replace('{user}', `@${req.user.username}`)
+    .replace('{age}', String(age));
+
+  const response = { textPreview: text };
+
+  if (cfg.mode === 'embed') {
+    response.embedPreview = {
+      title: cfg.embedTitle,
+      description: text,
+      color: cfg.embedColor,
+      thumbnail: cfg.embedThumbnail ? avatarUrl : null,
+      image: cfg.embedImageUrl || null
+    };
+  }
+
+  res.json(response);
+});
+
 router.post('/:guildId/send-test', requireAuth, requireGuildAccess, async (req, res) => {
-  const { channelId, message } = req.body;
+  const { channelId, message, mode, embedTitle, embedColor, embedThumbnail, embedImageUrl, mentionRoleId } = req.body;
   if (!channelId) return res.status(400).json({ error: 'Choisis d\'abord un salon d\'annonce avant de tester.' });
 
   try {
-    const text = '🧪 **Test** — ' + (message || '')
-      .replace('{user}', `<@${req.user.id}>`)
-      .replace('{age}', '25');
+    const realBirthday = await Birthday.findOne({ guildId: req.params.guildId, userId: req.user.id });
+    const age = realBirthday?.year ? calculateAge(realBirthday.year, realBirthday.month, realBirthday.day) : null;
 
-    await sendMessage(channelId, { content: text });
+    const text = (message || '')
+      .replace('{user}', `<@${req.user.id}>`)
+      .replace('{age}', age !== null ? String(age) : '25 (exemple — définis ton année de naissance via /anniversaire definir pour un âge réel)');
+
+    const mention = mentionRoleId ? `<@&${mentionRoleId}> ` : '';
+    const payload = {};
+
+    if (mode === 'embed') {
+      const avatarUrl = req.user.avatar
+        ? `https://cdn.discordapp.com/avatars/${req.user.id}/${req.user.avatar}.png?size=256`
+        : `https://cdn.discordapp.com/embed/avatars/${Number(req.user.id.slice(-1)) % 5}.png`;
+
+      const embed = {
+        title: embedTitle || '🎉 Joyeux anniversaire !',
+        description: '🧪 **Test** — ' + text,
+        color: embedColor ? parseInt(embedColor.replace('#', ''), 16) : 0xFEE75C
+      };
+      if (embedThumbnail) embed.thumbnail = { url: avatarUrl };
+      if (embedImageUrl) embed.image = { url: embedImageUrl };
+
+      payload.content = mention || undefined;
+      payload.embeds = [embed];
+    } else {
+      payload.content = mention + '🧪 **Test** — ' + text;
+    }
+
+    await sendMessage(channelId, payload);
     res.json({ success: true });
   } catch (err) {
     console.error('[BIRTHDAYS][SEND]', err.response?.data || err.message);

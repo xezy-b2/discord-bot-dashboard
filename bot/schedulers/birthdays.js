@@ -49,7 +49,29 @@ async function checkBirthdays(client) {
         .replace('{user}', `<@${b.userId}>`)
         .replace('{age}', age !== null ? String(age) : '');
 
-      channel.send(text).catch(() => {});
+      const mention = config.birthdays.mentionRoleId ? `<@&${config.birthdays.mentionRoleId}> ` : '';
+      const payload = {};
+
+      if (config.birthdays.mode === 'embed') {
+        const member = await guild.members.fetch(b.userId).catch(() => null);
+        const embed = {
+          title: config.birthdays.embedTitle || '🎉 Joyeux anniversaire !',
+          description: text,
+          color: config.birthdays.embedColor ? parseInt(config.birthdays.embedColor.replace('#', ''), 16) : 0xFEE75C
+        };
+        if (config.birthdays.embedThumbnail && member) {
+          embed.thumbnail = { url: member.user.displayAvatarURL({ extension: 'png', size: 256 }) };
+        }
+        if (config.birthdays.embedImageUrl) {
+          embed.image = { url: config.birthdays.embedImageUrl };
+        }
+        payload.content = mention || undefined;
+        payload.embeds = [embed];
+      } else {
+        payload.content = mention + text;
+      }
+
+      channel.send(payload).catch(() => {});
 
       if (config.birthdays.roleId) {
         const member = await guild.members.fetch(b.userId).catch(() => null);

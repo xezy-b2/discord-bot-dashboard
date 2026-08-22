@@ -211,7 +211,14 @@ const BirthdaysConfigSchema = new Schema({
   channelId: { type: String, default: null },
   message: { type: String, default: '🎉 Joyeux anniversaire {user} !! 🎂' },
   roleId: { type: String, default: null }, // role optionnel attribue le jour J (retire le lendemain)
-  sendHour: { type: Number, default: 9, min: 0, max: 23 } // heure d'envoi (UTC), 0-23
+  sendHour: { type: Number, default: 9, min: 0, max: 23 }, // heure d'envoi (UTC), 0-23
+
+  mentionRoleId: { type: String, default: null }, // role ping dans l'annonce (distinct du role du jour J ci-dessus)
+  mode: { type: String, enum: ['text', 'embed'], default: 'text' },
+  embedTitle: { type: String, default: '🎉 Joyeux anniversaire !' },
+  embedColor: { type: String, default: '#FEE75C' },
+  embedThumbnail: { type: Boolean, default: true }, // avatar du membre en miniature
+  embedImageUrl: { type: String, default: '' } // image custom optionnelle (banniere d'anniversaire par ex.)
 }, { _id: false });
 
 const ReactionRoleSchema = new Schema({

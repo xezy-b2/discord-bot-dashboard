@@ -45,6 +45,14 @@ function calculateAge(birthYear, birthMonth, birthDay) {
   return age;
 }
 
+/** Construit le texte de mention : @everyone, @here, ou un vrai rôle <@&id> */
+function buildMention(mentionRoleId) {
+  if (!mentionRoleId) return '';
+  if (mentionRoleId === 'everyone') return '@everyone ';
+  if (mentionRoleId === 'here') return '@here ';
+  return `<@&${mentionRoleId}> `;
+}
+
 /**
  * POST /api/birthdays/:guildId/preview
  * Genere un apercu (texte ou embed) avec le pseudo/avatar reel de l'utilisateur connecte
@@ -91,7 +99,7 @@ router.post('/:guildId/send-test', requireAuth, requireGuildAccess, async (req, 
       .replace('{user}', `<@${req.user.id}>`)
       .replace('{age}', age !== null ? String(age) : '25 (exemple — définis ton année de naissance via /anniversaire definir pour un âge réel)');
 
-    const mention = mentionRoleId ? `<@&${mentionRoleId}> ` : '';
+    const mention = buildMention(mentionRoleId);
     const payload = {};
 
     if (mode === 'embed') {

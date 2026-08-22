@@ -162,6 +162,8 @@ export default function Birthdays() {
               <label className="label">Rôle à mentionner (optionnel)</label>
               <select className="input-field" value={cfg.mentionRoleId || ''} onChange={e => update({ mentionRoleId: e.target.value || null })}>
                 <option value="">— Aucun —</option>
+                <option value="everyone">@everyone</option>
+                <option value="here">@here</option>
                 {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
               <p className="text-[11px] text-white/30 mt-1.5">Ce rôle sera notifié à chaque annonce (ex: "Fans d'anniversaires").</p>

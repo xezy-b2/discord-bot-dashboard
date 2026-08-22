@@ -12,6 +12,14 @@ function calculateAge(birthYear, birthMonth, birthDay) {
   return age;
 }
 
+/** Construit le texte de mention : @everyone, @here, ou un vrai rôle <@&id> */
+function buildMention(mentionRoleId) {
+  if (!mentionRoleId) return '';
+  if (mentionRoleId === 'everyone') return '@everyone ';
+  if (mentionRoleId === 'here') return '@here ';
+  return `<@&${mentionRoleId}> `;
+}
+
 async function checkBirthdays(client) {
   const now = new Date();
   const day = now.getUTCDate();
@@ -49,7 +57,7 @@ async function checkBirthdays(client) {
         .replace('{user}', `<@${b.userId}>`)
         .replace('{age}', age !== null ? String(age) : '');
 
-      const mention = config.birthdays.mentionRoleId ? `<@&${config.birthdays.mentionRoleId}> ` : '';
+      const mention = buildMention(config.birthdays.mentionRoleId);
       const payload = {};
 
       if (config.birthdays.mode === 'embed') {

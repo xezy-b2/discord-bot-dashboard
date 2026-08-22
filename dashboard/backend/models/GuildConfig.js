@@ -210,7 +210,8 @@ const BirthdaysConfigSchema = new Schema({
   enabled: { type: Boolean, default: false },
   channelId: { type: String, default: null },
   message: { type: String, default: '🎉 Joyeux anniversaire {user} !! 🎂' },
-  roleId: { type: String, default: null } // role optionnel attribue le jour J (retire le lendemain)
+  roleId: { type: String, default: null }, // role optionnel attribue le jour J (retire le lendemain)
+  sendHour: { type: Number, default: 9, min: 0, max: 23 } // heure d'envoi (UTC), 0-23
 }, { _id: false });
 
 const ReactionRoleSchema = new Schema({

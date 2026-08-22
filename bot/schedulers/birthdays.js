@@ -1,13 +1,23 @@
 const Birthday = require('../database/models/Birthday');
 const GuildConfig = require('../database/models/GuildConfig');
 
-const CHECK_INTERVAL_MS = 60 * 60 * 1000; // verifie toutes les heures (suffisant, pas besoin de la seconde pres)
+const CHECK_INTERVAL_MS = 15 * 60 * 1000; // toutes les 15 min, pour respecter l'heure d'envoi choisie avec precision
+
+/** Calcule l'age exact a partir d'une date de naissance (tient compte du mois/jour, pas juste l'annee) */
+function calculateAge(birthYear, birthMonth, birthDay) {
+  const now = new Date();
+  let age = now.getFullYear() - birthYear;
+  const hasHadBirthdayThisYear = (now.getMonth() + 1 > birthMonth) || (now.getMonth() + 1 === birthMonth && now.getDate() >= birthDay);
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
 
 async function checkBirthdays(client) {
   const now = new Date();
-  const day = now.getDate();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
+  const day = now.getUTCDate();
+  const month = now.getUTCMonth() + 1;
+  const year = now.getUTCFullYear();
+  const currentHour = now.getUTCHours();
 
   const todaysBirthdays = await Birthday.find({ day, month, lastAnnouncedYear: { $ne: year } });
   if (!todaysBirthdays.length) return;
@@ -22,6 +32,11 @@ async function checkBirthdays(client) {
     const config = await GuildConfig.findOne({ guildId });
     if (!config?.birthdays?.enabled || !config.birthdays.channelId) continue;
 
+    // Respecte l'heure d'envoi choisie sur le dashboard (en UTC) : on n'annonce que
+    // pendant l'heure configuree, pas des que le jour/mois correspond.
+    const sendHour = config.birthdays.sendHour ?? 9;
+    if (currentHour !== sendHour) continue;
+
     const guild = client.guilds.cache.get(guildId);
     if (!guild) continue;
 
@@ -29,7 +44,7 @@ async function checkBirthdays(client) {
     if (!channel) continue;
 
     for (const b of birthdays) {
-      const age = b.year ? year - b.year : null;
+      const age = b.year ? calculateAge(b.year, b.month, b.day) : null;
       const text = (config.birthdays.message || '🎉 Joyeux anniversaire {user} !')
         .replace('{user}', `<@${b.userId}>`)
         .replace('{age}', age !== null ? String(age) : '');

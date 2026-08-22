@@ -92,6 +92,18 @@ export default function Birthdays() {
             </div>
 
             <div>
+              <label className="label">Heure d'envoi (UTC)</label>
+              <select className="input-field" value={cfg.sendHour ?? 9} onChange={e => update({ sendHour: Number(e.target.value) })}>
+                {Array.from({ length: 24 }, (_, h) => (
+                  <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-white/30 mt-1.5">
+                Heure exprimée en UTC (pas l'heure locale de ton pays) — décale au besoin selon ton fuseau horaire.
+              </p>
+            </div>
+
+            <div>
               <label className="label">Rôle "anniversaire" du jour (optionnel, retiré automatiquement le lendemain)</label>
               <select className="input-field" value={cfg.roleId || ''} onChange={e => update({ roleId: e.target.value })}>
                 <option value="">— Aucun —</option>

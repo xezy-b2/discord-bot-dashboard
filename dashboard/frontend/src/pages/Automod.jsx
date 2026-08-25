@@ -129,6 +129,7 @@ export default function Automod() {
   const [wordInput, setWordInput] = useState('');
   const [userIdInput, setUserIdInput] = useState('');
   const [protectedRoleToAdd, setProtectedRoleToAdd] = useState('');
+  const [domainInput, setDomainInput] = useState('');
 
   // Reconstruit une forme garantie, quelle que soit la structure deja presente en base
   // (protege contre les anciennes configs a plat, incompatibles avec le nouveau schema imbrique).
@@ -140,7 +141,7 @@ export default function Automod() {
       enabled: raw.enabled ?? false,
       bannedWords: { enabled: false, words: [], action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.bannedWords) ? raw.bannedWords : {}) },
       invite: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.invite) ? raw.invite : {}) },
-      link: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.link) ? raw.link : {}) },
+      link: { enabled: false, mode: 'all', allowedDomains: [], blockedDomains: [], action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.link) ? raw.link : {}) },
       caps: { enabled: false, percent: 70, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.caps) ? raw.caps : {}) },
       emojiSpam: { enabled: false, maxEmojis: 10, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.emojiSpam) ? raw.emojiSpam : {}) },
       mentionSpam: { enabled: false, limit: 5, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.mentionSpam) ? raw.mentionSpam : {}) },
@@ -233,6 +234,63 @@ export default function Automod() {
           onToggle={v => updateFeature('link', { enabled: v })}
         >
           <ActionSelect value={cfg.link.action} onChange={v => updateFeature('link', { action: v })} />
+
+          <div>
+            <label className="label mb-2">Mode</label>
+            <div className="flex flex-col gap-2">
+              {[
+                { value: 'all', label: 'Bloquer tous les liens' },
+                { value: 'whitelist', label: 'N\'autoriser que certains domaines (liste blanche)' },
+                { value: 'blacklist', label: 'N\'interdire que certains domaines (liste noire)' }
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => updateFeature('link', { mode: opt.value })}
+                  className={`text-left px-3 py-2 rounded-lg border text-sm transition ${cfg.link.mode === opt.value ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {(cfg.link.mode === 'whitelist' || cfg.link.mode === 'blacklist') && (
+            <div>
+              <label className="label mb-2">
+                {cfg.link.mode === 'whitelist' ? 'Domaines autorisés' : 'Domaines interdits'}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  className="input-field" placeholder="ex: youtube.com" value={domainInput}
+                  onChange={e => setDomainInput(e.target.value)}
+                />
+                <button
+                  className="btn-ghost text-sm shrink-0"
+                  onClick={() => {
+                    if (!domainInput.trim()) return;
+                    const key = cfg.link.mode === 'whitelist' ? 'allowedDomains' : 'blockedDomains';
+                    updateFeature('link', { [key]: [...cfg.link[key], domainInput.trim().toLowerCase()] });
+                    setDomainInput('');
+                  }}
+                >
+                  Ajouter
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {(cfg.link.mode === 'whitelist' ? cfg.link.allowedDomains : cfg.link.blockedDomains).map((d, i) => {
+                  const key = cfg.link.mode === 'whitelist' ? 'allowedDomains' : 'blockedDomains';
+                  return (
+                    <span key={i} className="text-xs bg-white/5 px-2.5 py-1 rounded-lg flex items-center gap-2">
+                      {d}
+                      <button onClick={() => updateFeature('link', { [key]: cfg.link[key].filter((_, idx) => idx !== i) })} className="text-white/40 hover:text-red-400">✕</button>
+                    </span>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-white/30 mt-1.5">Les sous-domaines sont pris en compte automatiquement (ex: "youtube.com" couvre aussi "www.youtube.com" et "m.youtube.com").</p>
+            </div>
+          )}
+
           <ExemptPicker channels={channels} roles={roles} value={cfg.link} onChange={p => updateFeature('link', p)} />
         </FeatureCard>
 

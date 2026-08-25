@@ -78,6 +78,9 @@ const AutomodSchema = new Schema({
   },
   link: {
     enabled: { type: Boolean, default: false },
+    mode: { type: String, enum: ['all', 'whitelist', 'blacklist'], default: 'all' }, // all = bloque tous les liens
+    allowedDomains: { type: [String], default: [] }, // utilise si mode = whitelist
+    blockedDomains: { type: [String], default: [] }, // utilise si mode = blacklist
     action: ActionField,
     ...ExemptFields
   },

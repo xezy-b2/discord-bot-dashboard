@@ -44,6 +44,17 @@ async function getGuildInfo(guildId) {
   return data;
 }
 
+/** Récupère la liste des membres bannis d'une guilde (pseudo, avatar, raison du ban) */
+async function getGuildBans(guildId) {
+  const { data } = await botApi.get(`/guilds/${guildId}/bans?limit=1000`);
+  return data; // [{ user: {...}, reason }]
+}
+
+/** Débannit un membre */
+async function unbanUser(guildId, userId) {
+  await botApi.delete(`/guilds/${guildId}/bans/${userId}`);
+}
+
 /** Récupère les infos publiques d'un utilisateur (pseudo, avatar) via son ID */
 async function getUser(userId) {
   const { data } = await botApi.get(`/users/${userId}`);
@@ -107,6 +118,8 @@ module.exports = {
   getGuildCategories,
   getGuildRoles,
   getGuildInfo,
+  getGuildBans,
+  unbanUser,
   getUser,
   getUsers,
   sendMessage,

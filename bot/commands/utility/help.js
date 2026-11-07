@@ -8,6 +8,7 @@ const COMMAND_GROUPS = [
     commands: [
       { cmd: '/kick', perm: PermissionFlagsBits.KickMembers },
       { cmd: '/ban', perm: PermissionFlagsBits.BanMembers },
+      { cmd: '/massban', perm: PermissionFlagsBits.BanMembers },
       { cmd: '/unban', perm: PermissionFlagsBits.BanMembers },
       { cmd: '/mute', perm: PermissionFlagsBits.ModerateMembers },
       { cmd: '/unmute', perm: PermissionFlagsBits.ModerateMembers },

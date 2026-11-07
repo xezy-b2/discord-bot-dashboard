@@ -8,6 +8,42 @@ module.exports = {
   async execute(member) {
     const config = await GuildConfig.findOne({ guildId: member.guild.id });
 
+    // --- Age minimum du compte (anti-raid) : verifie et sanctionne AVANT tout le reste (bienvenue, roles auto...) ---
+    const ageCfg = config?.automod?.accountAge;
+    if (ageCfg?.enabled) {
+      const accountAgeDays = (Date.now() - member.user.createdTimestamp) / 86_400_000;
+      if (accountAgeDays < (ageCfg.minDays ?? 7)) {
+        const reason = `Compte trop récent (${accountAgeDays.toFixed(1)} jour(s), minimum requis : ${ageCfg.minDays} jour(s))`;
+
+        try {
+          if (ageCfg.action === 'ban') {
+            await member.ban({ reason });
+          } else {
+            await member.kick(reason);
+          }
+        } catch (err) {
+          console.error(`[AUTOMOD] Échec de la sanction automatique (âge du compte) sur ${member.user.tag} :`, err.message);
+        }
+
+        const notifyChannel = ageCfg.notifyChannelId ? member.guild.channels.cache.get(ageCfg.notifyChannelId) : null;
+        notifyChannel?.send({
+          content: `🚨 **${member.user.tag}** a été ${ageCfg.action === 'ban' ? 'banni' : 'expulsé'} automatiquement : compte créé il y a seulement ${accountAgeDays.toFixed(1)} jour(s) (minimum requis : ${ageCfg.minDays} jours).`
+        }).catch(() => {});
+
+        sendLog(member.guild, 'memberJoin', buildLogEmbed({
+          title: '🚨 Nouveau membre rejeté (compte trop récent)',
+          color: '#ED4245',
+          fields: [
+            { name: 'Membre', value: `${member.user.tag} (${member.id})`, inline: true },
+            { name: 'Âge du compte', value: `${accountAgeDays.toFixed(1)} jour(s)`, inline: true },
+            { name: 'Action', value: ageCfg.action === 'ban' ? 'Bannissement' : 'Expulsion' }
+          ]
+        }));
+
+        return; // on s'arrete ici : pas de bienvenue, pas de roles auto pour un membre qu'on vient de retirer
+      }
+    }
+
     // Log independant du message de bienvenue (peut etre active meme si la bienvenue est desactivee)
     sendLog(member.guild, 'memberJoin', buildLogEmbed({
       title: '📥 Nouveau membre',

@@ -120,6 +120,15 @@ const AutomodSchema = new Schema({
     enabled: { type: Boolean, default: false },
     action: ActionField,
     ...ExemptFields
+  },
+
+  // Age minimum du compte requis pour rester sur le serveur (anti-raid).
+  // Verifie a l'arrivee du membre (pas sur un message), donc pas d'exemptions de salon/role ici.
+  accountAge: {
+    enabled: { type: Boolean, default: false },
+    minDays: { type: Number, default: 7, min: 1, max: 365 },
+    action: { type: String, enum: ['kick', 'ban'], default: 'kick' },
+    notifyChannelId: { type: String, default: null }
   }
 }, { _id: false });
 

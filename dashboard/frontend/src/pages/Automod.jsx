@@ -147,7 +147,8 @@ export default function Automod() {
       mentionSpam: { enabled: false, limit: 5, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.mentionSpam) ? raw.mentionSpam : {}) },
       pingProtection: { enabled: false, protectedUserIds: [], protectedRoleIds: [], action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.pingProtection) ? raw.pingProtection : {}) },
       spam: { enabled: true, threshold: 5, intervalMs: 5000, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.spam) ? raw.spam : {}) },
-      markdown: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.markdown) ? raw.markdown : {}) }
+      markdown: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.markdown) ? raw.markdown : {}) },
+      accountAge: { enabled: false, minDays: 7, action: 'kick', notifyChannelId: null, ...(isPlainObject(raw.accountAge) ? raw.accountAge : {}) }
     };
 
     // Ecrase toute valeur d'action corrompue (ex: [] issue d'une ancienne structure de schema)
@@ -422,6 +423,50 @@ export default function Automod() {
         >
           <ActionSelect value={cfg.markdown.action} onChange={v => updateFeature('markdown', { action: v })} />
           <ExemptPicker channels={channels} roles={roles} value={cfg.markdown} onChange={p => updateFeature('markdown', p)} />
+        </FeatureCard>
+
+        <FeatureCard
+          title="Âge minimum du compte"
+          description="Rejette les nouveaux membres dont le compte Discord est trop récent (anti-raid)."
+          checked={cfg.accountAge.enabled}
+          onToggle={v => updateFeature('accountAge', { enabled: v })}
+        >
+          <div>
+            <label className="label">Âge minimum requis (jours)</label>
+            <input
+              type="number" min="1" max="365" className="input-field w-28"
+              value={cfg.accountAge.minDays}
+              onChange={e => updateFeature('accountAge', { minDays: Number(e.target.value) })}
+            />
+          </div>
+
+          <div>
+            <label className="label mb-2">Sanction</label>
+            <div className="flex gap-2">
+              {[{ value: 'kick', label: 'Expulsion' }, { value: 'ban', label: 'Bannissement' }].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => updateFeature('accountAge', { action: opt.value })}
+                  className={`px-3 py-2 rounded-lg border text-sm transition ${cfg.accountAge.action === opt.value ? 'bg-signal-500/15 border-signal-500/40 text-signal-400' : 'border-white/10 text-white/50 hover:bg-white/5'}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="label">Salon de notification (optionnel)</label>
+            <select
+              className="input-field"
+              value={cfg.accountAge.notifyChannelId || ''}
+              onChange={e => updateFeature('accountAge', { notifyChannelId: e.target.value || null })}
+            >
+              <option value="">— Aucun —</option>
+              {channels.map(c => <option key={c.id} value={c.id}>#{c.name}</option>)}
+            </select>
+            <p className="text-[11px] text-white/30 mt-1.5">Un message y est envoyé à chaque membre rejeté pour cette raison.</p>
+          </div>
         </FeatureCard>
       </div>
       )}

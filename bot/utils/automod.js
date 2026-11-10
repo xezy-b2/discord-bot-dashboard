@@ -2,6 +2,7 @@
 const spamCache = new Map(); // key: guildId-userId -> [timestamps]
 
 const INVITE_REGEX = /(discord\.gg|discordapp\.com\/invite|discord\.com\/invite)\/\S+/i;
+const LINK_REGEX = /(https?:\/\/[^\s]+)/i;
 const EMOJI_REGEX = /(<a?:\w+:\d+>|\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu;
 const SPOILER_REGEX = /\|\|[\s\S]+?\|\|/;
 const HEADER_REGEX = /^#{1,3}\s/m;
@@ -48,45 +49,56 @@ function checkForbiddenMentions(message, pingCfg) {
   return !!hasProtectedRole;
 }
 
-/**
- * Verifie si un message contient un lien interdit, selon le mode configure :
- * - 'all' : n'importe quel lien http(s) est bloque (comportement simple, historique)
- * - 'whitelist' : bloque tout lien dont le domaine n'est PAS dans la liste autorisee
- * - 'blacklist' : bloque uniquement les liens dont le domaine EST dans la liste interdite
- */
-function checkLinks(content, linkCfg) {
-  const urls = content.match(/https?:\/\/[^\s<>]+/gi);
-  if (!urls) return false;
-
-  const mode = linkCfg.mode || 'all';
-  if (mode === 'all') return true; // un lien trouve = violation, peu importe le domaine
-
-  const domainMatches = (hostname, domain) => hostname === domain || hostname.endsWith(`.${domain}`);
-
-  for (const url of urls) {
-    let hostname;
-    try {
-      hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-    } catch (e) {
-      continue; // URL malformee, on l'ignore plutot que de planter
-    }
-
-    if (mode === 'whitelist') {
-      const isAllowed = linkCfg.allowedDomains?.some(d => domainMatches(hostname, d.toLowerCase().replace(/^www\./, '')));
-      if (!isAllowed) return true; // domaine absent de la liste blanche -> violation
-    }
-
-    if (mode === 'blacklist') {
-      const isBlocked = linkCfg.blockedDomains?.some(d => domainMatches(hostname, d.toLowerCase().replace(/^www\./, '')));
-      if (isBlocked) return true; // domaine present dans la liste noire -> violation
-    }
-  }
-
-  return false;
-}
-
 function checkMarkdownAbuse(content) {
   return SPOILER_REGEX.test(content) || HEADER_REGEX.test(content) || CODEBLOCK_REGEX.test(content);
+}
+
+/** Extrait les noms d'hote (sans "www.") de toutes les URL presentes dans le texte. */
+function extractDomains(content) {
+  const matches = content.match(/https?:\/\/[^\s<>]+/gi) || [];
+  return matches
+    .map(url => {
+      try {
+        return new URL(url).hostname.replace(/^www\./i, '').toLowerCase();
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+/** Vrai si `domain` correspond a l'un des domaines de `list` (ou a l'un de ses sous-domaines). */
+function domainInList(domain, list) {
+  return !!list?.some(d => {
+    const base = d.toLowerCase();
+    return domain === base || domain.endsWith(`.${base}`);
+  });
+}
+
+/**
+ * Vrai si le message doit etre sanctionne par la fonctionnalite "liens externes",
+ * en tenant compte du mode (tout bloquer / whitelist / blacklist) ET du verrouillage
+ * temporaire des nouveaux arrivants, qui prime sur le mode des que le membre est trop
+ * recent (tous les liens sont alors bloques, meme ceux normalement autorises).
+ */
+function checkLinks(message, linkCfg) {
+  if (!LINK_REGEX.test(message.content)) return false;
+
+  const lockoutCfg = linkCfg.newMemberLockout;
+  if (lockoutCfg?.enabled && message.member?.joinedTimestamp) {
+    const minutesSinceJoin = (Date.now() - message.member.joinedTimestamp) / 60_000;
+    if (minutesSinceJoin < (lockoutCfg.minutes ?? 60)) return true;
+  }
+
+  const mode = linkCfg.mode || 'all';
+  if (mode === 'all') return true;
+
+  const domains = extractDomains(message.content);
+  if (domains.length === 0) return true; // lien detecte mais non analysable -> on bloque par securite
+
+  if (mode === 'whitelist') return domains.some(d => !domainInList(d, linkCfg.allowedDomains));
+  if (mode === 'blacklist') return domains.some(d => domainInList(d, linkCfg.blockedDomains));
+  return true;
 }
 
 /**
@@ -99,7 +111,7 @@ function analyzeMessage(message, cfg) {
   const content = message.content;
 
   if (cfg.invite?.enabled && !isExempt(message, cfg.invite) && INVITE_REGEX.test(content)) return { reason: 'invite_link', action: cfg.invite.action };
-  if (cfg.link?.enabled && !isExempt(message, cfg.link) && checkLinks(content, cfg.link)) return { reason: 'external_link', action: cfg.link.action };
+  if (cfg.link?.enabled && !isExempt(message, cfg.link) && checkLinks(message, cfg.link)) return { reason: 'external_link', action: cfg.link.action };
   if (cfg.bannedWords?.enabled && !isExempt(message, cfg.bannedWords) && cfg.bannedWords.words?.some(w => content.toLowerCase().includes(w.toLowerCase()))) return { reason: 'banned_word', action: cfg.bannedWords.action };
   if (cfg.caps?.enabled && !isExempt(message, cfg.caps) && checkCaps(content, cfg.caps.percent)) return { reason: 'excessive_caps', action: cfg.caps.action };
   if (cfg.emojiSpam?.enabled && !isExempt(message, cfg.emojiSpam) && checkEmojiSpam(content, cfg.emojiSpam.maxEmojis)) return { reason: 'emoji_spam', action: cfg.emojiSpam.action };

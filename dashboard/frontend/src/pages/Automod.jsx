@@ -141,7 +141,11 @@ export default function Automod() {
       enabled: raw.enabled ?? false,
       bannedWords: { enabled: false, words: [], action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.bannedWords) ? raw.bannedWords : {}) },
       invite: { enabled: false, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.invite) ? raw.invite : {}) },
-      link: { enabled: false, mode: 'all', allowedDomains: [], blockedDomains: [], action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.link) ? raw.link : {}) },
+      link: {
+        enabled: false, mode: 'all', allowedDomains: [], blockedDomains: [], action: 'delete', ignoredChannels: [], ignoredRoles: [],
+        ...(isPlainObject(raw.link) ? raw.link : {}),
+        newMemberLockout: { enabled: false, minutes: 60, ...(isPlainObject(raw.link?.newMemberLockout) ? raw.link.newMemberLockout : {}) }
+      },
       caps: { enabled: false, percent: 70, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.caps) ? raw.caps : {}) },
       emojiSpam: { enabled: false, maxEmojis: 10, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.emojiSpam) ? raw.emojiSpam : {}) },
       mentionSpam: { enabled: false, limit: 5, action: 'delete', ignoredChannels: [], ignoredRoles: [], ...(isPlainObject(raw.mentionSpam) ? raw.mentionSpam : {}) },
@@ -291,6 +295,25 @@ export default function Automod() {
               <p className="text-[11px] text-white/30 mt-1.5">Les sous-domaines sont pris en compte automatiquement (ex: "youtube.com" couvre aussi "www.youtube.com" et "m.youtube.com").</p>
             </div>
           )}
+
+          <div className="pt-2 border-t border-white/5">
+            <Toggle
+              checked={cfg.link.newMemberLockout.enabled}
+              onChange={v => updateFeature('link', { newMemberLockout: { ...cfg.link.newMemberLockout, enabled: v } })}
+              label="Bloquer tous les liens pour les nouveaux arrivants"
+            />
+            <p className="text-[11px] text-white/30 mt-1.5">Pendant la durée définie après son arrivée sur le serveur, tous les liens d'un membre sont bloqués — même ceux normalement autorisés ci-dessus.</p>
+            {cfg.link.newMemberLockout.enabled && (
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  type="number" min="1" max="10080" className="input-field w-24"
+                  value={cfg.link.newMemberLockout.minutes}
+                  onChange={e => updateFeature('link', { newMemberLockout: { ...cfg.link.newMemberLockout, minutes: Number(e.target.value) } })}
+                />
+                <span className="text-sm text-white/50">minutes après l'arrivée sur le serveur</span>
+              </div>
+            )}
+          </div>
 
           <ExemptPicker channels={channels} roles={roles} value={cfg.link} onChange={p => updateFeature('link', p)} />
         </FeatureCard>

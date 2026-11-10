@@ -82,7 +82,15 @@ const AutomodSchema = new Schema({
     allowedDomains: { type: [String], default: [] }, // utilise si mode = whitelist
     blockedDomains: { type: [String], default: [] }, // utilise si mode = blacklist
     action: ActionField,
-    ...ExemptFields
+    ...ExemptFields,
+
+    // Verrouillage temporaire des nouveaux arrivants : pendant les X minutes suivant son arrivee
+    // sur le serveur, TOUS les liens sont bloques pour ce membre, meme ceux normalement autorises
+    // par le mode whitelist/blacklist ci-dessus (anti-raid / anti-spam de bienvenue).
+    newMemberLockout: {
+      enabled: { type: Boolean, default: false },
+      minutes: { type: Number, default: 60, min: 1, max: 10080 } // max 7 jours
+    }
   },
   caps: {
     enabled: { type: Boolean, default: false },
